@@ -1,0 +1,12 @@
+name = "hack-the-andes-seguridad"
+main = ".svelte-kit/cloudflare/_worker.js"
+compatibility_date = "2026-10-01"
+# adapter-cloudflare's worker crashes at boot without Node APIs.
+compatibility_flags = ["nodejs_compat"]
+
+# Keep `routes` above every [table]: TOML would otherwise nest it under the
+# table and wrangler silently ignores it.
+
+[assets]
+directory = ".svelte-kit/cloudflare"
+binding = "ASSETS"
