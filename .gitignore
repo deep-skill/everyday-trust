@@ -12,3 +12,7 @@ dist
 !.dev.vars.example
 .DS_Store
 .claude
+
+# Local-only context and raw downloads (never published)
+.analisis/
+data/raw/

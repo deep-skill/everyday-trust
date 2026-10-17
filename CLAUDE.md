@@ -2,6 +2,10 @@
 
 Verificador de estafas para peruanos: el usuario pega un mensaje, link o número y recibe veredicto, motivos y qué hacer. Equipo `deepskill` (JP solo), track Seguridad. Evento del 17 oct 9:00 al 18 oct ~14:00.
 
+## Inicio de sesión
+
+Leer `.analisis/README.md` (local, ignorado por git): reglas del evento, fuentes de datos verificadas, competidores, plan con pendientes y preferencias de JP. Datos crudos en `data/raw/` (también ignorado).
+
 ## Repo público
 
 - Este repo y su URL se publican en la galería del evento. Nunca commitear llaves, `.dev.vars`, datos de clientes de Deep Skill ni mensajes reales con datos personales de terceros.
