@@ -1,0 +1,42 @@
+@startuml value-stream
+title Consulta de un mensaje sospechoso
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName SansSerif
+skinparam shadowing false
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #1D4ED8
+|Persona|
+start
+:Recibe un mensaje y busca ayuda;
+if (Proceso) then (Actual supuesto)
+  :Busca y pregunta en varias fuentes;
+  :Repite el relato y compara respuestas;
+  :Busca un canal para confirmar;
+else (Objetivo)
+  :Pega el mensaje sin registrarse;
+  |Servicio|
+  :Comprueba señales locales y minimiza contexto;
+  :Entrega advertencias disponibles y acción;
+  fork
+    |Persona|
+    :Lee advertencias y puede actuar sin esperar;
+  fork again
+    |Servicio|
+    :Completa fuentes e IA con plazo máximo;
+    :Actualiza resultado y cobertura sin exigir cuenta;
+  end fork
+  |Persona|
+  :Indica si hizo clic, compartió datos o pagó (opcional);
+endif
+:Entiende el riesgo y elige una acción;
+if (Proceso objetivo y desea conservar el resultado) then (Sí)
+  :Entra o crea cuenta;
+  :Confirma guardar un resumen saneado;
+endif
+stop
+note right
+  Medir trabajo, espera y retrabajo.
+  Los tiempos actuales y el ahorro
+  todavía no están observados.
+end note
+@enduml

@@ -1,0 +1,104 @@
+@startuml source-catalog
+title Catálogos de verificación y procedencia
+hide circle
+skinparam linetype ortho
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName SansSerif
+skinparam shadowing false
+
+entity Source {
+  * id : identifier <<PK>>
+  --
+  * name : text
+  * kind : category
+  * public_url : URL
+}
+entity SourceVersion {
+  * id : identifier <<PK>>
+  --
+  * source_id : identifier <<FK>>
+  * fetched_at : timestamp
+  * content_digest : text
+  * status : publication category
+  reviewed_at : timestamp
+}
+entity Brand {
+  * id : identifier <<PK>>
+  --
+  * name : text
+  * sector : category
+  * source_version_id : identifier <<FK>>
+}
+entity OfficialDomain {
+  * id : identifier <<PK>>
+  --
+  * brand_id : identifier <<FK>>
+  * hostname : normalized host
+  * match_scope : category
+  * source_version_id : identifier <<FK>>
+  * verified_at : timestamp
+  * status : category
+}
+entity OfficialChannel {
+  * id : identifier <<PK>>
+  --
+  * brand_id : identifier <<FK>>
+  * channel_type : category
+  * purpose : category
+  * public_value : official public contact
+  * source_version_id : identifier <<FK>>
+  * verified_at : timestamp
+  * status : category
+}
+entity BrandPolicy {
+  * id : identifier <<PK>>
+  --
+  * brand_id : identifier <<FK>>
+  * statement : official statement
+  * channel_scope : channel set
+  * prohibited_action : category
+  data_kind : category
+  * applicability_conditions : constraints
+  * source_version_id : identifier <<FK>>
+  * verified_at : timestamp
+  * status : category
+}
+entity ThreatIndicator {
+  * id : identifier <<PK>>
+  --
+  * indicator_type : domain or host
+  * normalized_value : text
+  * source_version_id : identifier <<FK>>
+  * first_seen : timestamp
+  * last_seen : timestamp
+  * expires_at : timestamp
+  imitated_brand_id : identifier <<FK>>
+  * status : category
+}
+entity RegulatoryNotice {
+  * id : identifier <<PK>>
+  --
+  * reported_name : text
+  * notice_kind : category
+  * published_at : date
+  * notice_url : official URL
+  * source_version_id : identifier <<FK>>
+}
+
+Source ||--o{ SourceVersion
+SourceVersion ||--o{ Brand
+SourceVersion ||--o{ OfficialDomain
+SourceVersion ||--o{ OfficialChannel
+SourceVersion ||--o{ BrandPolicy
+SourceVersion ||--o{ ThreatIndicator
+SourceVersion ||--o{ RegulatoryNotice
+Brand ||--o{ OfficialDomain
+Brand ||--o{ OfficialChannel
+Brand ||--o{ BrandPolicy
+Brand |o--o{ ThreatIndicator
+
+note bottom of OfficialChannel
+  Published channels are not proof of sender identity.
+  Unknown senders are not automatically fraudulent.
+end note
+@enduml

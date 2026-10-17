@@ -1,0 +1,63 @@
+@startuml
+title <size:24>Contexto del verificador de mensajes</size>
+
+set separator none
+left to right direction
+skinparam ranksep 20
+skinparam nodesep 5
+hide stereotype
+
+<style>
+  root {
+    BackgroundColor: #ffffff;
+    FontColor: #444444;
+  }
+  // Element,Person
+  .Element-RWxlbWVudCxQZXJzb24= {
+    BackgroundColor: #1e3a8a;
+    LineColor: #152860;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Element,Software System
+  .Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0= {
+    BackgroundColor: #1d4ed8;
+    LineColor: #143697;
+    LineStyle: 0;
+    LineThickness: 2;
+    FontColor: #ffffff;
+    FontSize: 24;
+    HorizontalAlignment: center;
+    Shadowing: 0;
+    MaximumWidth: 450;
+  }
+  // Relationship
+  .Relationship-UmVsYXRpb25zaGlw {
+    LineThickness: 2;
+    LineStyle: 10-10;
+    LineColor: #444444;
+    FontColor: #444444;
+    FontSize: 24;
+    MaximumWidth: 200;
+  }
+</style>
+
+person "==Persona que consulta\n<size:16>[Person]</size>\n\nEvalúa un mensaje y decide su siguiente acción, con o sin cuenta." <<Element-RWxlbWVudCxQZXJzb24=>> as Personaqueconsulta
+person "==Operador\n<size:16>[Person]</size>\n\nMantiene fuentes, costos y funcionamiento sin leer mensajes en logs." <<Element-RWxlbWVudCxQZXJzb24=>> as Operador
+rectangle "==Servicio de identidad\n<size:16>[Software System]</size>\n\nRegistro y acceso a cuentas; Cognito es el candidato sobre AWS." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Serviciodeidentidad
+rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nInterpreta casos y seguimiento con respuesta estructurada y plazo máximo." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as ProveedordeIA
+rectangle "==Fuentes verificables\n<size:16>[Software System]</size>\n\nPáginas oficiales de marcas, avisos SBS, feeds de phishing y RDAP, con procedencia." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Fuentesverificables
+rectangle "==Verificador de mensajes\n<size:16>[Software System]</size>\n\nSeñales, explicación y ayuda ante mensajes sospechosos para personas en Perú." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Verificadordemensajes
+
+Personaqueconsulta --> Verificadordemensajes <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta y guarda casos\n<size:16>[HTTPS]</size>"
+Operador --> Verificadordemensajes <<Relationship-UmVsYXRpb25zaGlw>> : "Mantiene fuentes y operación\n<size:16>[Acceso operativo]</size>"
+Verificadordemensajes --> Serviciodeidentidad <<Relationship-UmVsYXRpb25zaGlw>> : "Inicia acceso\n<size:16>[OIDC, propuesta]</size>"
+Verificadordemensajes --> ProveedordeIA <<Relationship-UmVsYXRpb25zaGlw>> : "Interpreta contexto minimizado\n<size:16>[HTTPS]</size>"
+Verificadordemensajes --> Fuentesverificables <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta evidencia\n<size:16>[HTTPS]</size>"
+
+@enduml

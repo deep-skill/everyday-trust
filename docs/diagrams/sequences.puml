@@ -1,0 +1,90 @@
+@startuml sequence-analysis
+title Consulta abierta, evidencia inicial y actualización
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName SansSerif
+skinparam shadowing false
+actor Persona as person
+boundary Web as web
+control API as api
+participant "Minimización de datos" as privacy
+database "Estado temporal y cuotas" as state
+participant "Fuentes verificables" as sources
+participant "Proveedor de IA" as model
+
+person -> web : Pega el mensaje y envía
+web -> api : POST /api/v1/cases
+api -> api : Valida tamaño y sesión temporal
+api -> state : Consume cuota de forma atómica
+state --> api : Presupuesto disponible
+api -> api : Calcula señales locales
+api -> privacy : Prepara contexto permitido; descarta original
+privacy --> api : Contexto minimizado y señales necesarias
+api -> state : Crea caso con etapa, pendientes y plazo
+api --> web : 201: evidencia local, acción, in_progress
+web --> person : Advertencia disponible o revisión en curso
+par Completar comprobaciones con plazo total
+    api -> sources : Comprobaciones permitidas con timeout
+    sources --> api : Evidencia o no disponible
+    api -> api : Actualiza evaluación por reglas
+    opt IA configurada y dentro del presupuesto
+        api -> model : Sólo contexto minimizado y señales
+        model --> api : Respuesta o fallo
+        api -> privacy : Valida datos permitidos en salida
+        privacy --> api : Explicación permitida o rechazo
+        api -> api : Valida estructura y aplica piso de riesgo
+    end
+    api -> state : Finaliza revisión y cobertura disponible
+else Recuperar actualizaciones
+    loop Mientras el caso siga en curso, con frecuencia limitada
+        web -> api : GET /api/v1/cases/{id}
+        api -> state : Comprueba acceso y lee revisión
+        state --> api : Evaluación, cobertura y estado
+        api --> web : Revisión vigente, sin nueva cuota de análisis
+        web --> person : Actualiza sin perder el contexto
+    end
+end
+note over api,model
+  Propuesta lógica: el transporte y la continuación
+  se cierran con el stack. Un fallo conserva señales;
+  al vencer el plazo no quedan comprobaciones pendientes.
+  No se envían secretos al modelo deliberadamente.
+  Minimizar no garantiza anonimización perfecta.
+end note
+@enduml
+
+@startuml sequence-save
+title Guardado voluntario y acceso por propietario
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName SansSerif
+skinparam shadowing false
+actor Persona as person
+boundary Web as web
+participant "Servicio de identidad" as identity
+control API as api
+database "Estado temporal" as state
+database "Datos persistentes" as db
+
+person -> web : Elige guardar el caso
+web --> person : Explica qué datos se conservarán
+alt No tiene sesión de cuenta
+    web -> identity : Inicia acceso gestionado
+    identity --> web : Devuelve sesión según flujo acordado
+end
+person -> web : Confirma el guardado
+web -> api : POST /api/v1/cases/{id}/save
+api -> api : Valida identidad, solicitud e idempotencia
+api -> state : Comprueba acceso y análisis finalizado
+state --> api : Contexto minimizado y cobertura, o conflicto/vencimiento
+api -> api : Genera resumen y evidencias con campos permitidos
+api -> db : Guarda bajo el propietario validado
+db --> api : Caso guardado
+api --> web : Identificador del caso
+web --> person : Confirmación y acceso al historial
+
+person -> web : Retoma el caso desde historial
+web -> api : GET /api/v1/history/{id}
+api -> db : Consulta por id y propietario
+db --> api : Resumen y evidencias históricas
+api --> web : Resultado con su fecha y cobertura
+web --> person : Retoma el resumen; pide original si hace falta
+@enduml

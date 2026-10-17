@@ -1,0 +1,77 @@
+@startsalt wireframe-consultation
+title Consulta y seguimiento del caso
+{+
+  { "¿Es estafa?" | [Mi historial] | [Entrar / Crear cuenta] }
+  "Revisa un mensaje sospechoso"
+  "Recibe señales verificables y ayuda para decidir qué hacer."
+  {SI
+    "Pega el mensaje o enlace...                              "
+    "                                                         "
+    "                                                         "
+  }
+  { "Omite claves, códigos y datos personales; revisa antes de enviar." }
+  "Contexto temporal; historial sólo si eliges guardar. [Privacidad]"
+  { [Revisar mensaje] | "Cuota disponible" }
+  --
+  "Ejemplo sintético de un resultado sustentado:"
+  {+
+    "ALTO RIESGO: posible suplantación de BCP"
+    "El enlace figura en una fuente de phishing y menciona a BCP."
+    "Revisión finalizada / Cobertura parcial: una fuente no respondió."
+    "Qué hacer: verifica con la entidad antes de actuar."
+    [Ver canales oficiales verificados de BCP]
+    [Ver evidencias, fuentes y fechas]
+    [Guardar un resumen en mi cuenta]
+  }
+  "¿Ya interactuaste? Opcional; puedes elegir varias."
+  { [Abrí el enlace] | [Compartí datos] | [Pagué] }
+  { [¿Por qué?] | [No interactué] }
+  { "Pregunta sobre este caso...                         " | [Enviar] }
+  { [Me ayudó] | [No me ayudó] | [Nueva consulta] }
+  "Cómo funciona / Privacidad / Deep Skill"
+}
+@endsalt
+
+@startsalt wireframe-analysis
+title Resultado inicial mientras continúa la revisión
+{+
+  "Revisión en curso"
+  "Advertencia disponible: el enlace no coincide con el dominio oficial."
+  "Qué hacer ahora: confirma por un canal conocido antes de abrirlo."
+  { "Comprobación" | "Estado" }
+  { "Dominios oficiales" | "Revisado" }
+  { "Fuente de phishing" | "Pendiente" }
+  { "Explicación adicional" | "Pendiente" }
+  "Actualizaremos este caso; no necesitas volver a enviarlo."
+  "Si aún no hay evidencia suficiente, se muestra indeterminado."
+  "Guardar se habilita al finalizar, incluso con cobertura parcial."
+}
+@endsalt
+
+@startsalt wireframe-history
+title Historial privado
+{+
+  { "¿Es estafa?" | [Nueva consulta] | [Mi cuenta] }
+  "Mi historial"
+  "Resultados que elegiste guardar."
+  {#
+    "Caso" | "Fecha" | "Resultado" | "Acciones"
+    "Mensaje que menciona a BCP" | "Hoy" | "Alto riesgo" | "Retomar / Borrar"
+    "Revisión de enlaces" | "Ayer" | "Indeterminado" | "Retomar / Borrar"
+  }
+  "Se conserva un resumen y las evidencias, sin el mensaje original."
+  [Nueva consulta]
+}
+@endsalt
+
+@startsalt wireframe-signup
+title Beneficio antes del registro
+{+
+  "Guarda el resultado para volver a este caso"
+  "Cuenta gratuita: historial privado y más consultas."
+  "Conservaremos un resumen y las evidencias permitidas."
+  "El historial no conserva el mensaje original."
+  [Continuar al acceso seguro]
+  [Volver al caso sin registrarme]
+}
+@endsalt

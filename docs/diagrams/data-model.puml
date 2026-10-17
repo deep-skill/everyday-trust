@@ -1,0 +1,88 @@
+@startuml data-model
+title Modelo lógico de resultados guardados
+hide circle
+skinparam linetype ortho
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName SansSerif
+skinparam shadowing false
+
+entity AccountProfile {
+  * id : identifier <<PK>>
+  --
+  * identity_issuer : text
+  * identity_subject : text
+  * created_at : timestamp
+}
+entity SavedCase {
+  * id : identifier <<PK>>
+  --
+  * owner_id : identifier <<FK>>
+  * title : sanitized text
+  * resume_summary : sanitized text
+  * verdict : risk category
+  * baseline_verdict : risk category
+  * risk_origin : category
+  * scam_type : pattern hypothesis
+  * rules_score : integer 0..100
+  * analysis_mode : category
+  * coverage : check summary
+  * analyzed_at : timestamp
+  * schema_version : text
+  * policy_version : text
+  * created_at : timestamp
+}
+entity CaseEvidence {
+  * id : identifier <<PK>>
+  --
+  * case_id : identifier <<FK>>
+  source_version_id : identifier <<FK>>
+  * signal_id : text
+  * severity : category
+  * explanation : sanitized text
+  * checked_at : timestamp
+  * check_status : category
+  domain : public domain
+}
+entity Source {
+  * id : identifier <<PK>>
+  --
+  * name : text
+  * kind : category
+  * public_url : URL
+}
+entity SourceVersion {
+  * id : identifier <<PK>>
+  --
+  * source_id : identifier <<FK>>
+  * fetched_at : timestamp
+  * content_digest : text
+  * status : category
+  reviewed_at : timestamp
+}
+entity QuotaBucket {
+  * subject_key : pseudonymous key <<PK>>
+  * operation : text <<PK>>
+  * window_start : timestamp <<PK>>
+  --
+  * count : integer
+  * expires_at : timestamp
+}
+
+AccountProfile ||--o{ SavedCase : owns
+SavedCase ||--o{ CaseEvidence : contains
+Source ||--o{ SourceVersion : versions
+SourceVersion |o--o{ CaseEvidence : supports
+
+note bottom of AccountProfile
+  UNIQUE(identity_issuer, identity_subject)
+  Credentials stay with the identity provider.
+end note
+note bottom of SavedCase
+  No original message, phone numbers,
+  email addresses or full conversation.
+end note
+note bottom of QuotaBucket
+  Independent operational counters.
+  Expiring keys, atomic updates.
+end note
+@enduml
