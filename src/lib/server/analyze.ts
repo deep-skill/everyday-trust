@@ -1,7 +1,7 @@
 import { analyzeText, analyzeUrl, extractPhones, extractUrls } from './signals';
 import type { AnalysisResult, Severity, Signal, Verdict } from '$lib/types';
 
-const MAX_URLS = 5;
+const MAX_NETWORK_URLS = 5;
 const WEIGHTS: Record<Severity, number> = { high: 45, medium: 15, low: 5, info: 0 };
 
 const ADVICE: Record<Verdict, string[]> = {
@@ -31,9 +31,19 @@ const SUMMARY: Record<Verdict, string> = {
 };
 
 export async function analyze(text: string): Promise<AnalysisResult> {
-	const urls = await Promise.all(extractUrls(text).slice(0, MAX_URLS).map(analyzeUrl));
+	const extractedUrls = extractUrls(text);
+	const urls = await Promise.all(
+		extractedUrls.map((url, index) => analyzeUrl(url, index < MAX_NETWORK_URLS))
+	);
 	const phones = extractPhones(text);
 	const textSignals = analyzeText(text);
+	if (extractedUrls.length > MAX_NETWORK_URLS) {
+		textSignals.push({
+			id: 'incomplete_link_checks',
+			severity: 'medium',
+			message: 'No pudimos completar la verificación de todos los links. Confirma cada destino por un canal oficial.'
+		});
+	}
 
 	const allSignals: Signal[] = [
 		...textSignals,
@@ -46,8 +56,11 @@ export async function analyze(text: string): Promise<AnalysisResult> {
 	);
 
 	const onlyOfficialLinks = urls.length > 0 && urls.every((url) => url.officialBrand);
-	const verdict: Verdict =
-		score >= 60 ? 'scam' : score >= 20 ? 'suspicious' : onlyOfficialLinks ? 'likely_safe' : 'unknown';
+	const verdict: Verdict = score >= 60
+		? 'scam'
+		: score >= 15
+			? 'suspicious'
+			: onlyOfficialLinks && score === 0 ? 'likely_safe' : 'unknown';
 
 	return {
 		verdict,

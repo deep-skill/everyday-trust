@@ -2,7 +2,7 @@ import { parse } from 'tldts';
 import { BRANDS, SUSPICIOUS_TLDS, URL_SHORTENERS, type Brand } from './brands';
 import type { PhoneFinding, Signal, UrlFinding } from '$lib/types';
 
-const URL_PATTERN = /\b(?:https?:\/\/)?(?:[a-z0-9-]+\.)+[a-z]{2,}(?::\d+)?(?:\/[^\s<>"')]*)?/gi;
+const URL_PATTERN = /(?<![\p{L}\p{N}_@/.\\-])(?:https?:\/\/[^\s<>"'`“”‘’]+|(?:(?:[\p{L}\p{N}-]+\.)+(?:[\p{L}]{2,}|xn--[a-z0-9-]+)|(?:\d{1,3}\.){3}\d{1,3}|\[[a-f0-9:]+\])[^\s<>"'`“”‘’]*)/giu;
 const PHONE_PATTERN = /(?:\+|00)?\d[\d\s-]{7,16}\d/g;
 const NETWORK_TIMEOUT_MS = 4000;
 const MAX_REDIRECT_HOPS = 5;
@@ -12,18 +12,25 @@ const LEET: Record<string, string> = { '0': 'o', '1': 'l', '3': 'e', '4': 'a', '
 export function extractUrls(text: string): string[] {
 	const found = new Set<string>();
 	for (const match of text.matchAll(URL_PATTERN)) {
-		const raw = match[0].replace(/[.,;:!?]+$/, '');
+		let raw = match[0].replace(/[.,;:!?…]+$/, '');
+		for (const [open, close] of [['(', ')'], ['[', ']'], ['{', '}']]) {
+			while (raw.endsWith(close) && raw.split(close).length > raw.split(open).length) {
+				raw = raw.slice(0, -1);
+			}
+		}
 		const hostname = toUrl(raw)?.hostname;
-		if (!hostname) continue;
-		const parsed = parse(hostname);
-		if (parsed.isIcann && parsed.domain) found.add(raw);
+		const parsed = hostname ? parse(hostname) : null;
+		if (/^https?:\/\//i.test(raw) || (hostname && (parsed?.isIcann || parsed?.isIp || raw.includes('@')))) {
+			found.add(raw);
+		}
 	}
 	return [...found];
 }
 
 function toUrl(raw: string): URL | null {
 	try {
-		return new URL(/^https?:\/\//i.test(raw) ? raw : `http://${raw}`);
+		const url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`);
+		return ['http:', 'https:'].includes(url.protocol) && url.hostname ? url : null;
 	} catch {
 		return null;
 	}
@@ -72,9 +79,20 @@ function imitatedBrandOf(hostname: string, domainLabel: string): Brand | null {
 	return null;
 }
 
-async function resolveRedirects(url: string): Promise<string> {
+function isShortener(url: URL): boolean {
+	return URL_SHORTENERS.has(url.hostname.replace(/^www\./, ''));
+}
+
+async function resolveRedirects(url: URL): Promise<{ finalUrl: string; resolved: boolean }> {
 	let current = url;
+	const visited = new Set<string>();
 	for (let hop = 0; hop < MAX_REDIRECT_HOPS; hop++) {
+		if (!isShortener(current)) return { finalUrl: current.href, resolved: true };
+		if (
+			current.protocol !== 'https:' || current.port || current.username || current.password ||
+			visited.has(current.href)
+		) break;
+		visited.add(current.href);
 		try {
 			const response = await fetch(current, {
 				method: 'HEAD',
@@ -82,13 +100,15 @@ async function resolveRedirects(url: string): Promise<string> {
 				signal: AbortSignal.timeout(NETWORK_TIMEOUT_MS)
 			});
 			const location = response.headers.get('location');
-			if (response.status < 300 || response.status >= 400 || !location) return current;
-			current = new URL(location, current).toString();
+			if (response.status < 300 || response.status >= 400 || !location) break;
+			const next = new URL(location, current);
+			if (!['http:', 'https:'].includes(next.protocol)) break;
+			current = next;
 		} catch {
-			return current;
+			break;
 		}
 	}
-	return current;
+	return { finalUrl: current.href, resolved: !isShortener(current) };
 }
 
 async function domainAgeDays(domain: string): Promise<number | null> {
@@ -107,20 +127,27 @@ async function domainAgeDays(domain: string): Promise<number | null> {
 	}
 }
 
-export async function analyzeUrl(input: string): Promise<UrlFinding> {
+export async function analyzeUrl(input: string, checkNetwork = true): Promise<UrlFinding> {
 	const signals: Signal[] = [];
 	const initial = toUrl(input);
 	let finalUrl = initial?.toString() ?? input;
 
-	// Only shorteners are followed: phishing links often carry a per-victim
-	// token, and visiting them would confirm the victim clicked.
-	if (initial && URL_SHORTENERS.has(initial.hostname.replace(/^www\./, ''))) {
+	// Stop before requesting a non-shortener: its URL may identify the victim.
+	if (initial && isShortener(initial)) {
 		signals.push({
 			id: 'shortener',
 			severity: 'low',
 			message: `El link usa un acortador (${initial.hostname}) que esconde el destino real.`
 		});
-		finalUrl = await resolveRedirects(finalUrl);
+		const redirect = checkNetwork ? await resolveRedirects(initial) : { finalUrl, resolved: false };
+		finalUrl = redirect.finalUrl;
+		if (!redirect.resolved) {
+			signals.push({
+				id: 'unresolved_shortener',
+				severity: 'medium',
+				message: 'No pudimos verificar el destino de este acortador. No lo abras sin confirmar su origen.'
+			});
+		}
 	}
 
 	const url = toUrl(finalUrl);
@@ -132,6 +159,27 @@ export async function analyzeUrl(input: string): Promise<UrlFinding> {
 	const imitated =
 		official || isGovernment ? null : imitatedBrandOf(hostname, parsed.domainWithoutSuffix ?? '');
 
+	if (!url) {
+		signals.push({
+			id: 'invalid_url',
+			severity: 'medium',
+			message: 'El link tiene un formato que no pudimos verificar. No lo abras sin confirmar su origen.'
+		});
+	}
+	if (initial?.username || initial?.password || url?.username || url?.password) {
+		signals.push({
+			id: 'url_userinfo',
+			severity: 'high',
+			message: `El link usa texto antes de @ que puede ocultar el destino real: ${hostname}.`
+		});
+	}
+	if (parsed.isIp) {
+		signals.push({
+			id: 'ip_address',
+			severity: 'medium',
+			message: 'El link apunta a una dirección IP en lugar de un dominio reconocible. Confirma su origen.'
+		});
+	}
 	if (imitated) {
 		signals.push({
 			id: 'brand_lookalike',
@@ -143,7 +191,7 @@ export async function analyzeUrl(input: string): Promise<UrlFinding> {
 		signals.push({
 			id: 'punycode',
 			severity: 'high',
-			message: 'El dominio usa letras de otros alfabetos para parecerse a un sitio conocido.'
+			message: 'El dominio contiene caracteres internacionales que pueden confundirse con otras letras. Comprueba que sea el sitio que buscas.'
 		});
 	}
 	if (parsed.publicSuffix && SUSPICIOUS_TLDS.has(parsed.publicSuffix)) {
@@ -157,7 +205,10 @@ export async function analyzeUrl(input: string): Promise<UrlFinding> {
 		signals.push({ id: 'no_https', severity: 'low', message: 'El sitio no usa conexión segura (https).' });
 	}
 
-	const ageDays = registrableDomain && !official && !isGovernment ? await domainAgeDays(registrableDomain) : null;
+	const ageDays = checkNetwork && url && !isShortener(url) && parsed.isIcann &&
+		registrableDomain && !official && !isGovernment
+		? await domainAgeDays(registrableDomain)
+		: null;
 	if (ageDays !== null && ageDays < 30) {
 		signals.push({
 			id: 'new_domain',
@@ -260,8 +311,34 @@ const TEXT_RULES: { id: string; severity: Signal['severity']; pattern: RegExp; m
 	}
 ];
 
+const REQUEST_PATTERN = /\b(?:(no|nunca|jam[aá]s)\s+(?:(?:debes|deber[ií]as)\s+)?)?(?:compart(?:[ea]s?|ir)|env[ií](?:[ea]s?|ar)(?:me|nos)?|entreg(?:[au]es?|a|ar)|revel(?:[ea]s?|ar)|ingres(?:[ea]s?|ar)|proporcion(?:[ea]s?|ar)|confirm(?:[ea]s?|ar)|valid(?:[ea]s?|ar)|dime|dame|p[aá]same)\b/giu;
+const CREDENTIAL_DENIAL_PATTERN = /\b(?:(?:ning[uú]n banco|ninguna empresa)\s+(?:te\s+)?(?:pide|pedir[aá]|solicita)|(?:no|nunca|jam[aá]s)\s+(?:te\s+)?(?:pedimos|pediremos|solicitamos|solicitaremos))(?!\p{L})/giu;
+const CREDENTIAL_REFERENCE_PATTERN = /^(?:[\s,]+|(?:tu|su|tus|sus|la|el|las|los|este|ese|claves?|contrase[ñn]as?|tokens?|c[oó]digos?|de|verificaci[oó]n|seguridad|sms|cvv|pin|ni|o|y|a|con|nadie)\b)*$/iu;
+
+function isSafetyAdvice(id: string, text: string, match: RegExpMatchArray): boolean {
+	const index = match.index ?? 0;
+	const before = text.slice(0, index).split(/[.!?;\n]/).at(-1) ?? '';
+	if (id === 'asks_credentials') {
+		const request = [...before.matchAll(REQUEST_PATTERN)].at(-1);
+		const denial = [...before.matchAll(CREDENTIAL_DENIAL_PATTERN)].at(-1);
+		const instruction = request ?? denial;
+		if (!instruction || (request && !request[1])) return false;
+		const reference = before.slice((instruction.index ?? 0) + instruction[0].length);
+		return CREDENTIAL_REFERENCE_PATTERN.test(reference);
+	}
+	if (id === 'prize_or_refund') {
+		const after = text.slice(index + match[0].length).split(/[.!?;\n]/)[0];
+		return /\bsi\b[^.!?;\n]{0,100}$/iu.test(before) && /\b(?:no|nunca|jam[aá]s)\s+(?:respondas?|pagues?|deposites?|hagas (?:clic|click)|abras?|ingreses?|env[ií]es?|compartas?|creas?)\b/iu.test(after);
+	}
+	return false;
+}
+
 export function analyzeText(text: string): Signal[] {
-	return TEXT_RULES.filter((rule) => rule.pattern.test(text)).map(({ id, severity, message }) => ({
+	return TEXT_RULES.filter((rule) =>
+		[...text.matchAll(new RegExp(rule.pattern.source, `${rule.pattern.flags}g`))].some(
+			(match) => !isSafetyAdvice(rule.id, text, match)
+		)
+	).map(({ id, severity, message }) => ({
 		id,
 		severity,
 		message

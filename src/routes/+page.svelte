@@ -148,7 +148,7 @@
 							<span class="font-mono">{url.hostname}</span>
 							{#if url.officialBrand}· sitio oficial de {url.officialBrand}{/if}
 							{#if url.domainAgeDays !== null}· creado hace {url.domainAgeDays} días{/if}
-							{#if url.finalUrl !== url.input && url.finalUrl !== `http://${url.input}`}
+							{#if url.finalUrl !== url.input && url.finalUrl !== `https://${url.input}` && url.finalUrl !== `https://${url.input}/`}
 								<br /><span class="text-slate-600">Lleva a: {url.finalUrl}</span>
 							{/if}
 						</p>
