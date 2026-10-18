@@ -14,6 +14,7 @@
   let turns = $state(5), interactions = $state<string[]>([]);
   let totals = $state<Totals | null>(null);
   let confirmDelete = $state(false), deleting = $state(false);
+  let loggingOut = $state(false);
   let generation = 0;
   let dialog: HTMLDialogElement;
   let input = $state<HTMLTextAreaElement>();
@@ -106,6 +107,17 @@
     catch (e) { error = (e as Error).message; dialog.close(); }
     finally { deleting = false; }
   }
+  async function logout(event: SubmitEvent) {
+    event.preventDefault();
+    if (loggingOut) return;
+    loggingOut = true;
+    try {
+      const response = await fetch('/auth/logout', { method: 'POST', headers: { accept: 'application/json' } });
+      if (!response.ok) throw new Error('No pudimos cerrar la sesión. Inténtalo de nuevo.');
+      const value = await response.json();
+      window.location.assign(value.redirect_to);
+    } catch (failure) { error = (failure as Error).message; loggingOut = false; }
+  }
   onMount(async () => {
     try { totals = (await api('visits', 'POST', {})).totals; } catch { void refreshTotals(); }
     const params = new URLSearchParams(window.location.search);
@@ -139,7 +151,7 @@
       <a class="mobile-brand brand" href="/"><img src="/mark.svg" width="31" height="31" alt="" /><span>¿Es estafa?</span></a>
       <span class="topbar-caption">Un poco de claridad antes de actuar.</span>
       <div class="topbar-actions">
-        {#if data.authenticated}<button class="quiet-button" onclick={() => openHistory()}>Mis consultas</button><button class="quiet-button" onclick={() => dialog.showModal()}>Cuenta</button><form method="POST" action="/auth/logout"><button class="login-button">Salir</button></form>
+        {#if data.authenticated}<button class="quiet-button" onclick={() => openHistory()}>Mis consultas</button><button class="quiet-button" onclick={() => dialog.showModal()}>Cuenta</button><form method="POST" action="/auth/logout" onsubmit={logout}><button class="login-button" disabled={loggingOut}>{loggingOut ? 'Saliendo…' : 'Salir'}</button></form>
         {:else}<button class="login-button" onclick={() => dialog.showModal()}>Crear cuenta →</button>{/if}
       </div>
     </header>
