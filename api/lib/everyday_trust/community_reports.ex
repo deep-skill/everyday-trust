@@ -174,32 +174,46 @@ defmodule EverydayTrust.Community do
   defp record(result, session, network) do
     domain = eligible_domain(result)
     secret = Application.fetch_env!(:everyday_trust, :service_token)
-    pseudonym = :crypto.mac(:hmac, :sha256, secret, "community-v1:" <> session) |> Base.encode16(case: :lower)
+
+    pseudonym =
+      :crypto.mac(:hmac, :sha256, secret, "community-v1:" <> session)
+      |> Base.encode16(case: :lower)
+
     now = DateTime.utc_now()
 
-    outcome = Repo.transaction(fn ->
-      Repo.query!("SELECT pg_advisory_xact_lock(72311)")
-      cleanup()
-      {count, _} = Repo.insert_all(CommunityReport, [%{
-        domain: domain,
-        session_hash: pseudonym,
-        brand: brand(domain),
-        verdict: result["verdict"],
-        reported_at: now
-      }], on_conflict: :nothing, conflict_target: [:domain, :session_hash])
+    outcome =
+      Repo.transaction(fn ->
+        Repo.query!("SELECT pg_advisory_xact_lock(72311)")
+        cleanup()
 
-      if count == 1 do
-        unless Cases.quota(session, nil, "community", 3) and
-                 Cases.quota(network, nil, "network_community", 60) and
-                 Cases.quota("global", nil, "all_community", 500),
-               do: Repo.rollback(:quota)
+        {count, _} =
+          Repo.insert_all(
+            CommunityReport,
+            [
+              %{
+                domain: domain,
+                session_hash: pseudonym,
+                brand: brand(domain),
+                verdict: result["verdict"],
+                reported_at: now
+              }
+            ],
+            on_conflict: :nothing,
+            conflict_target: [:domain, :session_hash]
+          )
 
-        reports = Repo.aggregate(from(r in CommunityReport, where: r.domain == ^domain), :count)
-        if reports >= 3 and independent?(domain, result), do: promote(domain)
-      end
+        if count == 1 do
+          unless Cases.quota(session, nil, "community", 3) and
+                   Cases.quota(network, nil, "network_community", 60) and
+                   Cases.quota("global", nil, "all_community", 500),
+                 do: Repo.rollback(:quota)
 
-      %{recorded: true}
-    end)
+          reports = Repo.aggregate(from(r in CommunityReport, where: r.domain == ^domain), :count)
+          if reports >= 3 and independent?(domain, result), do: promote(domain)
+        end
+
+        %{recorded: true}
+      end)
 
     case outcome do
       {:ok, response} -> {:ok, response}
@@ -211,16 +225,30 @@ defmodule EverydayTrust.Community do
     local = Signals.url("https://" <> domain, false)
     lookalike = Enum.any?(local["signals"], &(&1["id"] == "brand_lookalike"))
     signals = Map.get(result, "signals", [])
-    google = Enum.any?(signals, &(&1["id"] == "google_safe_browsing" and &1["domain"] == domain and fresh?(&1["checked_at"], 1_800)))
-    single = case result["domains"] do
-      [%{"domain" => ^domain, "age_status" => "match"}] -> true
-      _ -> false
-    end
-    young = single and Enum.any?(signals, &(&1["id"] == "new_domain" and fresh?(&1["checked_at"])))
-    scanned = Enum.any?(Map.get(result, "url_scans", []), fn scan ->
-      scan["status"] == "matched" and scan["domain"] == domain and
-        is_binary(scan["hostname"]) and Domain.registrable_domain(scan["hostname"]) == domain and fresh?(scan["checked_at"])
-    end)
+
+    google =
+      Enum.any?(
+        signals,
+        &(&1["id"] == "google_safe_browsing" and &1["domain"] == domain and
+            fresh?(&1["checked_at"], 1_800))
+      )
+
+    single =
+      case result["domains"] do
+        [%{"domain" => ^domain, "age_status" => "match"}] -> true
+        _ -> false
+      end
+
+    young =
+      single and Enum.any?(signals, &(&1["id"] == "new_domain" and fresh?(&1["checked_at"])))
+
+    scanned =
+      Enum.any?(Map.get(result, "url_scans", []), fn scan ->
+        scan["status"] == "matched" and scan["domain"] == domain and
+          is_binary(scan["hostname"]) and Domain.registrable_domain(scan["hostname"]) == domain and
+          fresh?(scan["checked_at"])
+      end)
+
     lookalike or google or young or scanned
   end
 
@@ -238,15 +266,20 @@ defmodule EverydayTrust.Community do
   defp promote(domain), do: Repo.query!("SELECT public.promote_community_candidate($1)", [domain])
 
   defp candidates([]), do: []
+
   defp candidates(domains) do
     cutoff = DateTime.add(DateTime.utc_now(), -30 * 86_400)
-    Repo.all(from i in ThreatIndicator,
-      join: v in ThreatVersion, on: v.id == i.version_id and v.digest == @digest,
-      join: r in CommunityReport, on: r.domain == i.host,
-      where: i.host in ^domains and i.status == "candidate" and r.reported_at >= ^cutoff,
-      group_by: i.host,
-      having: count(r.session_hash) >= 3,
-      select: i.host
+
+    Repo.all(
+      from i in ThreatIndicator,
+        join: v in ThreatVersion,
+        on: v.id == i.version_id and v.digest == @digest,
+        join: r in CommunityReport,
+        on: r.domain == i.host,
+        where: i.host in ^domains and i.status == "candidate" and r.reported_at >= ^cutoff,
+        group_by: i.host,
+        having: count(r.session_hash) >= 3,
+        select: i.host
     )
   end
 

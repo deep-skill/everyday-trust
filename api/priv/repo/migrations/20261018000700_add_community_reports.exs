@@ -11,9 +11,18 @@ defmodule EverydayTrust.Repo.Migrations.AddCommunityReports do
     end
 
     create index(:community_reports, [:reported_at])
-    create constraint(:community_reports, :community_session_hash_length, check: "char_length(session_hash) = 64")
-    create constraint(:community_reports, :community_domain_length, check: "char_length(domain) BETWEEN 3 AND 253")
-    create constraint(:community_reports, :community_verdict, check: "verdict IN ('suspicious', 'high_risk')")
+
+    create constraint(:community_reports, :community_session_hash_length,
+             check: "char_length(session_hash) = 64"
+           )
+
+    create constraint(:community_reports, :community_domain_length,
+             check: "char_length(domain) BETWEEN 3 AND 253"
+           )
+
+    create constraint(:community_reports, :community_verdict,
+             check: "verdict IN ('suspicious', 'high_risk')"
+           )
 
     execute(
       """
