@@ -161,14 +161,7 @@ defmodule EverydayTrust.SafeBrowsing do
       decode_body: false
     ]
 
-    response =
-      case if(@test_helpers,
-             do: Application.get_env(:everyday_trust, :test_safe_browsing_request),
-             else: nil
-           ) do
-        fun when is_function(fun, 2) -> fun.(@endpoint, options)
-        _ -> Req.get(@endpoint, options)
-      end
+    response = fetch(options)
 
     case response do
       {:ok, %{status: 200, body: body}} when is_binary(body) and byte_size(body) <= 65_536 ->
@@ -181,6 +174,17 @@ defmodule EverydayTrust.SafeBrowsing do
     _ -> {:error, :unavailable}
   catch
     _, _ -> {:error, :unavailable}
+  end
+
+  if @test_helpers do
+    defp fetch(options) do
+      case Application.get_env(:everyday_trust, :test_safe_browsing_request) do
+        fun when is_function(fun, 2) -> fun.(@endpoint, options)
+        _ -> Req.get(@endpoint, options)
+      end
+    end
+  else
+    defp fetch(options), do: Req.get(@endpoint, options)
   end
 
   defp parse_response(urls, %{"cacheDuration" => duration} = body) do
