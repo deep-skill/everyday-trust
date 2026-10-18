@@ -4,6 +4,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY svelte.config.js vite.config.ts tsconfig.json ./
 COPY src src
+COPY docs/presentation docs/presentation
+COPY scripts/sync-presentation.mjs scripts/sync-presentation.mjs
 COPY static static
 COPY docs/design/assets/tokens.css docs/design/assets/tokens.css
 COPY docs/design/proposal/style.css docs/design/proposal/style.css

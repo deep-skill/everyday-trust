@@ -85,3 +85,8 @@ plantuml -tsvg -o ../rendered docs/diagrams/c4/*.puml
 El binario se obtiene de la [distribución oficial](https://docs.structurizr.com/binaries) y no se incorpora al repositorio. Las exportaciones `docs/diagrams/c4/` se regeneran; no se editan manualmente.
 
 C4 es el modelo de vistas, Structurizr describe la arquitectura y PlantUML permite exportar y versionar las representaciones. No son tres arquitecturas distintas. Referencias: [C4](https://c4model.com/diagrams), [Structurizr DSL](https://docs.structurizr.com/dsl), [PlantUML](https://plantuml.com/).
+
+
+## Presentación y cierre del piloto
+
+[Slides HTML](presentation/index.html), [guía del pitch](presentation/README.md), [revisión de seguridad y límites](architecture/security-review.md) y [borradores para redes personales](launch/social-copy.md). Las visitas aproximadas y las valoraciones se muestran discretamente en la web; los comentarios llegan sólo al equipo. La tabla del alcance distingue lo implementado del roadmap de prevención.

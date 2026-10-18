@@ -24,3 +24,5 @@ __pycache__/
 # Local-only context and raw downloads (never published)
 .analisis/
 data/raw/
+
+/static/presentacion/

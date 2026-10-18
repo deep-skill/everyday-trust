@@ -93,3 +93,8 @@ Fuente editable: [data-model.puml](../diagrams/data-model.puml).
 ## Modelo implementado adicional
 
 `temporary_cases` incorpora `kind` (`query` o `demo`), `analysis_pending` y `analysis_deadline`. El resultado tiene revisión monotónica y estado de finalización. `daily_metrics(day, kind, metric, count)` usa clave compuesta y aumentos atómicos; no contiene texto, identidad ni IP. Las cuotas temporales permiten contar consultas adicionales y expiran a las 48 horas.
+
+
+## Visitas, valoraciones y comentarios
+
+`daily_metrics` añade visitas aproximadas, cantidad de valoraciones y suma de estrellas; los totales separan demostraciones de consultas. La deduplicación de visita reutiliza la sesión de navegador y los buckets diarios, sin fingerprint. `reviews` conserva un id, case_id único, owner_id opcional con borrado en cascada, kind, rating de1 a5, comentario de hasta500 caracteres y fechas. case_id no referencia por FK el caso temporal: la limpieza de casos no borra inmediatamente la reseña. No conserva el mensaje revisado ni alimenta al modelo. Los comentarios son privados y vencen a los30 días. Retirar un comentario conserva la marca de valoración y los agregados históricos, para que reintentar o borrar no permita duplicarlos. La eliminación de cuenta borra sus reseñas.

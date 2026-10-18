@@ -76,6 +76,7 @@ defmodule EverydayTrust.TractionTest do
     Application.put_env(:everyday_trust, :ai_provider, "meta")
     Application.put_env(:everyday_trust, :ai_key, "synthetic-key")
     Application.put_env(:everyday_trust, :ai_data_approved, true)
+
     Application.put_env(:everyday_trust, :test_model_request, fn _, _ ->
       flunk("Unexpected model call")
     end)

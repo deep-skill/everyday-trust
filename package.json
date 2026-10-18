@@ -10,7 +10,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"test": "npm run build && node --test tests/*.test.mjs",
 		"start": "node build",
-		"db:migrate:web": "node scripts/migrate-web.mjs"
+		"db:migrate:web": "node scripts/migrate-web.mjs",
+		"prebuild": "node scripts/sync-presentation.mjs"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-node": "5.5.7",

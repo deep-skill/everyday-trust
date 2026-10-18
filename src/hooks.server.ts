@@ -11,7 +11,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   const response = await resolve(event);
   if (!event.url.pathname.startsWith('/_app/')) response.headers.set('cache-control', 'no-store');
   response.headers.set('x-content-type-options', 'nosniff');
-  response.headers.set('referrer-policy', 'no-referrer');
+  response.headers.set('referrer-policy', 'same-origin');
   response.headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
   return response;
 };

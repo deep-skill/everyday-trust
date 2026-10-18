@@ -17,3 +17,7 @@
 !scripts/
 !scripts/migrate-web.mjs
 !scripts/start.mjs
+
+!docs/presentation/
+!docs/presentation/**
+!scripts/sync-presentation.mjs

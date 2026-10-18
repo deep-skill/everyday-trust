@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>¿Es estafa? · Hack the Andes 2026</title><meta name="description" content="Everyday Trust: verificación de mensajes y visión de prevención digital, Hack the Andes 2026."><link rel="stylesheet" href="slides.css"><script src="slides.js" defer></script></head>
+<body>
+<main aria-label="Presentación de ¿Es estafa?">
+<section class="slide cover" aria-labelledby="s1" data-notes="30 s. Un mensaje puede parecer de tu banco o de tu familia. El problema no es sólo reconocer un enlace: es decidir antes de compartir datos o dinero. Las cifras son registros denunciados, no personas únicas ni exclusivamente phishing. Fuente y metodología en docs/business/evidence.md.">
+  <div class="brand"><img src="mark.svg" alt="" width="44" height="44"><span>¿Es estafa?</span><small>Everyday Trust · Deep Skill</small></div>
+  <p class="eyebrow">HACK THE ANDES 2026 · SEGURIDAD</p>
+  <h1 id="s1">Cuando una estafa<br>parece de tu banco<br><em>o de tu familia.</em></h1>
+  <p class="lead cover-lead">Suplantación de bancos y familiares.<br>Pedidos de claves. Transferencias urgentes.</p>
+  <div class="problem-data"><div><strong>29.342</strong><span>registros de fraude informático</span></div><div><strong>10.559</strong><span>registros de suplantación de identidad</span></div><p>Perú, 2025 · Cálculo propio del CSV del Ministerio Público.<br>Registros denunciados; no son personas únicas ni se suman como víctimas.</p></div>
+  <a class="source" href="https://www.datosabiertos.gob.pe/dataset/delitos-inform%C3%A1ticos-denunciados-ante-el-ministerio-p%C3%BAblico-mpfn" target="_blank" rel="noreferrer">Fuente: MPFN, enero a diciembre de 2025 ↗</a>
+</section>
+<section class="slide" aria-labelledby="s2" data-notes="40 s más 35 s de demo. Abre el ejemplo bancario desde Cómo funciona. El usuario empieza sin cuenta. Las reglas y las comprobaciones son evidencia; la IA interpreta y nunca rebaja el riesgo de reglas. Explica qué hacer. Con cuenta: mayor uso e historial voluntario. No autentica al remitente. Las visitas y valoraciones están instrumentadas: mostrar lo que exista, no inventar tracción.">
+  <p class="eyebrow">EL PRODUCTO HOY</p><h2 id="s2">Revisa antes de responder</h2><p class="lead">Pegas el mensaje. Entiendes las señales. Sabes qué hacer.</p>
+  <div class="product-flow"><div class="sample"><span>MENSAJE FICTICIO</span><p>«Tu cuenta será bloqueada hoy.<br>Valida tu contraseña en<br><b>acceso-banco.example</b>»</p></div><div class="flow-arrow" aria-hidden="true">→</div><div class="sample result"><span>ALTO RIESGO</span><h3>Haz una pausa y verifica</h3><p>Pide tu contraseña y te presiona.<br>No compartas claves. Abre la app<br>de tu banco por tu cuenta.</p></div></div>
+  <div class="capabilities"><p><strong>Verificación</strong><br>Dominios oficiales, alertas conocidas,<br>registro y respuesta del sitio.</p><p><strong>Ayuda acotada</strong><br>Interpretación con IA y siguientes<br>pasos según lo que ocurrió.</p><p><strong>Continuidad</strong><br>Cuenta, guardado voluntario,<br>historial privado y valoraciones.</p></div>
+  <p class="footnote">Una revisión orienta; no garantiza seguridad ni confirma la identidad del remitente.</p>
+</section>
+<section class="slide vision" aria-labelledby="s3" data-notes="25 s. La web es el punto de entrada. La evolución es actuar antes del clic, con permiso. Extensión: señales en navegación. PC y móvil: revisión de enlaces y alertas donde el sistema lo permita, sin prometer leer todas las aplicaciones ni protección total. Primero medir comprensión y uso. Verificación básica abierta; prevención personal o familiar de pago es una hipótesis por validar.">
+  <p class="eyebrow">VISIÓN DEL PRODUCTO</p><h2 id="s3">La prevención llega antes del clic</h2>
+  <div class="timeline"><div><span class="phase">DISPONIBLE</span><h3>Consulta web</h3><p>La persona trae el mensaje.<br>Recibe evidencia y ayuda.</p></div><div><span class="phase future">SIGUIENTE ETAPA</span><h3>Extensión de navegador</h3><p>Advertencias en el momento<br>de abrir un enlace sospechoso.</p></div><div><span class="phase future">VISIÓN</span><h3>PC y celular</h3><p>Agentes preventivos con permiso,<br>según las capacidades del sistema.</p></div></div>
+  <p class="vision-line">Una misma cuenta para consultar hoy<br>y activar protección en tus dispositivos después.</p>
+  <p class="footnote">Extensión y apps son roadmap. Protección personal o familiar de pago: hipótesis de negocio por validar.</p>
+</section>
+<section class="slide architecture" aria-labelledby="s4" data-notes="35 s. Entrada por Cloudflare y túnel saliente, EC2 sin puertos de entrada. Nginx limita tráfico, SvelteKit es UI y BFF, Phoenix calcula señales y aplica cuotas atómicas compartidas en RDS. Cognito gestiona identidad; tokens cifrados sólo en servidor. Contributor recibe contexto completo del piloto, salida JSON validada y sin herramientas. GHCR, OIDC y SSM despliegan imágenes por digest. S3 guarda artefactos; Parameter Store guarda secretos; CloudWatch tiene grupo creado, sin alarmas aún. Un EC2 y RDS Single-AZ: no afirmar alta disponibilidad. No hay CAPTCHA ni tope monetario verificado del proveedor.">
+  <p class="eyebrow">ARQUITECTURA DESPLEGADA</p><h2 id="s4">AWS, evidencia y límites por capas</h2>
+  <img class="architecture-diagram" src="architecture.svg" alt="Personas acceden por Cloudflare y túnel saliente a EC2 con cloudflared, Nginx, SvelteKit BFF y API Phoenix. Cognito proporciona identidad; RDS PostgreSQL es privado. La API consulta fuentes y Muse Spark externo. GitHub Actions y GHCR despliegan por OIDC y SSM; S3 guarda artefactos, Parameter Store secretos y CloudWatch tiene un grupo de logs creado.">
+  <p class="footnote">Cuotas de uso en PostgreSQL · Salida de IA validada · Sin mensajes originales en el historial · EC2 único / RDS Single-AZ</p>
+</section>
+<section class="slide closing" aria-labelledby="s5" data-notes="15 s. Invita a probar con un mensaje sin datos personales y dejar una valoración. Gracias y preguntas. El producto está en piloto de hackathon; no garantiza seguridad. D abre la demo en una pestaña nueva. La presentación funciona sin bibliotecas ni fuentes externas.">
+  <img src="mark.svg" alt="" width="80" height="80"><h2 id="s5">Gracias</h2><p class="lead">Preguntas · Ideas · Mensajes que te hicieron dudar</p><a class="demo-url" href="https://verifica.deepskill.space/" target="_blank" rel="noreferrer">verifica.deepskill.space</a><p class="closing-ask">Prueba sin datos personales.<br>Cuéntanos si te ayudó a decidir.</p><span class="signature">Everyday Trust · Deep Skill · Hack the Andes 2026</span>
+</section>
+</main>
+<nav class="controls" aria-label="Controles de presentación"><button id="previous" aria-label="Diapositiva anterior">←</button><span id="position" aria-live="polite"></span><button id="next" aria-label="Diapositiva siguiente">→</button><button id="fullscreen" aria-label="Pantalla completa">Pantalla completa</button><button id="notes-toggle" aria-expanded="false">Notas</button><a href="https://verifica.deepskill.space/" target="_blank" rel="noreferrer">Demo ↗</a><button id="motion" aria-pressed="false">Animación: activa</button></nav>
+<aside id="notes" hidden aria-label="Notas del presentador"></aside>
+</body></html>

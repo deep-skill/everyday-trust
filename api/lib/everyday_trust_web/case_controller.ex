@@ -141,6 +141,12 @@ defmodule EverydayTrustWeb.CaseController do
     do:
       "Tus consultas ya se eliminaron. La eliminación en el proveedor de identidad está pendiente; vuelve a intentarlo desde Cuenta."
 
+  defp message_for_code("review_limit", _),
+    do: "Por hoy ya enviaste tus valoraciones. Gracias por ayudarnos a mejorar."
+
+  defp message_for_code("invalid_review", _),
+    do: "Elige de una a cinco estrellas y un comentario de hasta 500 caracteres."
+
   defp message_for_code(_, status), do: message_for(status)
   defp message_for(401), do: "Inicia sesión para continuar."
   defp message_for(404), do: "La consulta no existe o ya venció."
