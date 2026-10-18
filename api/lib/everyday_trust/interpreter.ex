@@ -130,7 +130,7 @@ defmodule EverydayTrust.Interpreter do
 
     config = provider()
 
-    if config &&
+    if config && related_followup?(text) &&
          Application.get_env(:everyday_trust, :ai_data_approved, false) &&
          Cases.quota("global", nil, "ai", 200) do
       instruction =
@@ -158,6 +158,13 @@ defmodule EverydayTrust.Interpreter do
     else
       fallback
     end
+  end
+
+  defp related_followup?(text) do
+    Regex.match?(
+      ~r/mensaje|estafa|fraude|phishing|suplant|banco|yape|plin|familiar|dominio|enlace|link|riesgo|se[ñn]al|verific|confirm|segur|clave|contrase[ñn]a|c[oó]digo|datos|dinero|pag[oua]|transfer|denunci|report|remitente|bloque|qu[eé] hago|por qu[eé]|y ahora|c[oó]mo (act[uú]o|sigo|evito)/iu,
+      text
+    )
   end
 
   defp provider do

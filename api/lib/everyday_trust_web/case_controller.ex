@@ -10,6 +10,26 @@ defmodule EverydayTrustWeb.CaseController do
 
   def stats(conn, _), do: json(conn, EverydayTrust.Metrics.today())
 
+  def visit(conn, _),
+    do: json(conn, EverydayTrust.Metrics.visit(conn.assigns.session, conn.assigns.network))
+
+  def review(conn, %{"id" => id} = params) do
+    respond(
+      conn,
+      EverydayTrust.Reviews.submit(
+        id,
+        conn.assigns.session,
+        conn.assigns.owner,
+        conn.assigns.network,
+        params["rating"],
+        Map.get(params, "comment", "")
+      )
+    )
+  end
+
+  def delete_review(conn, %{"id" => id}),
+    do: respond(conn, EverydayTrust.Reviews.delete(id, conn.assigns.session, conn.assigns.owner))
+
   def health(conn, _), do: json(conn, %{status: "ok", version: "0.1.0"})
 
   def create(conn, %{"text" => text}) when is_binary(text) do

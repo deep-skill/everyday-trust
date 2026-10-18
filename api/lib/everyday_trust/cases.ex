@@ -364,6 +364,7 @@ defmodule EverydayTrust.Cases do
 
     Repo.delete_all(from c in Case, where: c.expires_at < ^now)
     Repo.query!("DELETE FROM quota_buckets WHERE expires_at < $1", [now])
+    Repo.query!("DELETE FROM reviews WHERE inserted_at < $1", [DateTime.add(now, -30 * 86_400)])
 
     Repo.query!("DELETE FROM identity_deletions WHERE status='completed' AND expires_at < $1", [
       now

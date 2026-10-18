@@ -6,8 +6,8 @@ import { createHmac } from 'node:crypto';
 
 const allowed: Record<string, RegExp> = {
   GET: /^(health|stats|me|history|history\/[a-f0-9-]{36}|cases\/[a-f0-9-]{36})$/,
-  POST: /^(cases|cases\/[a-f0-9-]{36}\/(save|messages|feedback))$/,
-  DELETE: /^(me|history\/[a-f0-9-]{36})$/
+  POST: /^(visits|cases|cases\/[a-f0-9-]{36}\/(save|messages|feedback|review))$/,
+  DELETE: /^(me|history\/[a-f0-9-]{36}|cases\/[a-f0-9-]{36}\/review)$/
 };
 const proxy: RequestHandler = async ({ cookies, params, request, url, getClientAddress }) => {
   const path = params.path ?? '';

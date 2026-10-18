@@ -3,13 +3,16 @@
   import type { PageProps } from './$types';
   import { verdictLabels, type CaseResult, type HistoryItem } from '$lib/cases';
   import ResultEvidence from '$lib/components/ResultEvidence.svelte';
+  import Traction, { type Totals } from '$lib/components/Traction.svelte';
+  import ReviewForm from '$lib/components/ReviewForm.svelte';
   import { findExample } from '$lib/examples';
   let { data }: PageProps = $props();
   let text = $state(''), submitted = $state(''), loading = $state(false), error = $state('');
   let result = $state<CaseResult | null>(null), activeCase = $state<string | null>(null);
   let history = $state<HistoryItem[]>([]), historyOpen = $state(false), cursor = $state<string | null>(null);
   let saved = $state(false), followup = $state(''), followupText = $state(''), followupBusy = $state(false);
-  let turns = $state(5), interactions = $state<string[]>([]), feedback = $state(false);
+  let turns = $state(5), interactions = $state<string[]>([]);
+  let totals = $state<Totals | null>(null);
   let confirmDelete = $state(false), deleting = $state(false);
   let generation = 0;
   let dialog: HTMLDialogElement;
@@ -21,6 +24,9 @@
     if (!response.ok || !value) throw Object.assign(new Error(value?.error?.message ?? 'No pudimos completar la solicitud.'), { code: value?.error?.code });
     return value;
   }
+  async function refreshTotals() {
+    try { totals = (await api('stats')).totals; } catch { /* Metrics never interrupt a consultation. */ }
+  }
   async function poll(id: string, version = generation) {
     for (let attempt = 0; attempt < 22; attempt++) {
       if (version !== generation || activeCase !== id || result?.analysis_status !== 'in_progress') return;
@@ -29,6 +35,7 @@
         const next: CaseResult = await api(`cases/${id}`);
         if (version !== generation || activeCase !== id) return;
         if (next.revision >= (result?.revision ?? 0)) result = next;
+        if (next.analysis_status === 'completed') void refreshTotals();
       } catch { return; }
     }
   }
@@ -36,7 +43,7 @@
     generation++;
 
     text = ''; submitted = ''; result = null; activeCase = null; saved = false; error = '';
-    followup = ''; followupText = ''; turns = 5; interactions = []; feedback = false; historyOpen = false;
+    followup = ''; followupText = ''; turns = 5; interactions = []; historyOpen = false;
     window.history.replaceState({}, '', '/');
     input?.focus();
   }
@@ -44,12 +51,13 @@
     event?.preventDefault();
     if (loading || !text.trim()) return;
     generation++;
-    error = ''; loading = true; saved = false; followup = ''; followupText = ''; interactions = []; turns = 5; feedback = false;
+    error = ''; loading = true; saved = false; followup = ''; followupText = ''; interactions = []; turns = 5;
     try {
       const value = await api('cases', 'POST', { text });
       submitted = text; text = ''; result = value; activeCase = value.id; historyOpen = false;
       window.history.replaceState({}, '', `/?case=${value.id}`);
       void poll(value.id);
+      if (value.analysis_status === 'completed') void refreshTotals();
     } catch (e) { error = (e as Error).message; }
     finally { loading = false; }
   }
@@ -92,10 +100,6 @@
     }
     finally { followupBusy = false; }
   }
-  async function rate(value: string) {
-    try { await api(`cases/${activeCase}/feedback`, 'POST', { value }); feedback = true; }
-    catch (e) { error = (e as Error).message; }
-  }
   async function deleteAccount() {
     deleting = true;
     try { await api('me', 'DELETE'); window.location.assign('/'); }
@@ -103,6 +107,7 @@
     finally { deleting = false; }
   }
   onMount(async () => {
+    try { totals = (await api('visits', 'POST', {})).totals; } catch { void refreshTotals(); }
     const params = new URLSearchParams(window.location.search);
     if (params.get('auth') === 'failed') error = 'No pudimos completar el acceso. Puedes volver a intentarlo y seguir consultando sin cuenta.';
     const id = params.get('case');
@@ -190,10 +195,11 @@
               </section>
             </details>
             <div class="save-case"><div><p>Vuelve a ver este resultado en tu historial.<span>Sólo se guarda el resumen, sin el mensaje original.</span></p></div><button class="secondary-button" disabled={saved || result.analysis_status === 'in_progress'} onclick={save}>{saved ? 'Resultado guardado' : 'Guardar resultado'}</button></div>
-            <div class="feedback">{#if feedback}<p role="status">Gracias por contarnos.</p>{:else}<span>¿Te sirvió?</span><button class="quiet-button" onclick={() => rate('helpful')}>Sí</button><button class="quiet-button" onclick={() => rate('unhelpful')}>No</button>{/if}</div>
+            {#if result.analysis_status === 'completed'}{#key activeCase}<ReviewForm caseId={activeCase} onrecord={() => void refreshTotals()} />{/key}{/if}
           {:else}<p class="privacy-note">Resultado histórico. Las comprobaciones corresponden a la fecha indicada.</p>{/if}
         </section>
       {/if}
+      <Traction {totals} />
       <footer class="main-footer"><a href="/como-funciona">Cómo funciona</a><a href="/privacidad">Uso de datos y límites</a><span>Everyday Trust · Deep Skill</span></footer>
     </main>
   </div>

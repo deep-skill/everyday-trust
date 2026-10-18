@@ -46,7 +46,10 @@ jobs:
           otp-version: '27.3'
           elixir-version: '1.18.4'
       - run: mix deps.get --check-locked
-      - run: mix format --check-formatted
+      - name: Check Elixir formatting
+        run: |
+          mix format
+          git diff --exit-code
       - run: mix compile --warnings-as-errors
       - run: mix ecto.create && mix ecto.migrate
       - run: mix test

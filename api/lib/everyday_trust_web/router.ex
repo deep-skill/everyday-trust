@@ -11,11 +11,14 @@ defmodule EverydayTrustWeb.Router do
   scope "/api/v1" do
     pipe_through :api
     get "/stats", EverydayTrustWeb.CaseController, :stats
+    post "/visits", EverydayTrustWeb.CaseController, :visit
     post "/cases", EverydayTrustWeb.CaseController, :create
     get "/cases/:id", EverydayTrustWeb.CaseController, :show
     post "/cases/:id/save", EverydayTrustWeb.CaseController, :save
     post "/cases/:id/messages", EverydayTrustWeb.CaseController, :message
     post "/cases/:id/feedback", EverydayTrustWeb.CaseController, :feedback
+    post "/cases/:id/review", EverydayTrustWeb.CaseController, :review
+    delete "/cases/:id/review", EverydayTrustWeb.CaseController, :delete_review
     get "/history", EverydayTrustWeb.CaseController, :history
     get "/history/:id", EverydayTrustWeb.CaseController, :saved
     delete "/history/:id", EverydayTrustWeb.CaseController, :delete
