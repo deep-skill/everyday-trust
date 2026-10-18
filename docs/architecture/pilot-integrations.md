@@ -69,3 +69,15 @@ La API mantiene sólo lectura en `threat_versions` y `threat_indicators`. Para l
 Las pruebas de Safe Browsing cubren coincidencia, neutralidad, timeout, llave/flag ausentes, eliminación de query y credenciales, caché, límites de antigüedad y separación de dominios/rutas. Su prueba de integración comprueba que el resultado inicial no espera a Google y que no se persiste texto ni ruta.
 
 Las pruebas de imagen comprueban firmas y MIME, tamaños, dimensiones, metadatos, ausencia de texto, salida JSON, un único request OCR y ausencia de payloads en logs. Las pruebas del parser verifican que el aumento de cuerpo no alcance otras rutas ni la función apagada. `SourceDisplay` comprueba minimización, asociación caso/informe, TTL y capacidad. Las suites usan ejemplos sintéticos y callbacks compilados para pruebas; no necesitan llaves ni llamadas externas reales. La evidencia del despliegue y las pruebas reales de proveedor se registra separadamente al verificar cada flag.
+
+## C. Comunidad y radar
+
+El resultado sólo ofrece compartir un dominio registrable sospechoso cuando el caso está completo, pertenece a la sesión o cuenta y no es una demostración. La casilla comienza desmarcada; no hay escritura hasta confirmar. `community_reports` conserva dominio, posible marca, veredicto, fecha y HMAC de sesión durante treinta días. Un dominio cuenta una sola vez por sesión. No conserva mensajes, rutas, imágenes, números ni IP.
+
+Las cuotas diarias son tres aportes por sesión, sesenta por red y quinientos globales, con reserva transaccional. Tres sesiones distintas y una señal independiente asociada al mismo dominio permiten crear un candidato en una versión comunitaria inactiva. Google debe tener menos de treinta minutos; las demás evidencias externas, menos de un día. La señal comunitaria tiene severidad media y no puede producir alto riesgo por sí sola.
+
+`/radar` expone únicamente cantidades y marcas agregadas de la última semana, sin nombres de dominios. El servidor reconstruye el payload público y distingue un fallo del servicio de un conteo de cero. El acceso al caso y el consentimiento se vuelven a comprobar en la API.
+
+## D2. Exportación del operador
+
+`mix community.export --output /ruta/privada/candidatos.csv` genera un archivo exclusivo con permisos 0600, sin sobrescribir otro archivo. También puede invocarse `EverydayTrust.Community.Export.csv/0` desde el release con el rol autorizado. Incluye candidatos comunitarios con tres sesiones vigentes y actividad durante la última semana: dominio, marca, veredicto, fechas y conteo agregado. Omite seudónimos y mensajes y protege las celdas contra fórmulas de hojas de cálculo. No hay endpoint público ni envío automático a bancos o al Estado.
