@@ -42,7 +42,7 @@ Prioridad propuesta antes de programar: cerrar stack/sesión y el primer corte; 
 ## Comprobaciones realizadas
 
 - Fuentes PlantUML renderizadas para VSM, wireframes, datos y secuencias.
-- Workspace lógico validado con Structurizr 2026.09.19; vistas C4 exportadas a PlantUML y SVG.
+- Workspace validado con Structurizr 2026.09.19; vistas C4 exportadas a PlantUML y SVG. Tras la confirmación de stack se añadió la vista AWS de despliegue, renderizada e inspeccionada visualmente. Esto no valida recursos reales.
 - Inspección visual de VSM, consulta, revisión en curso, modelo de datos, secuencia de análisis y componentes C4 tras los ajustes de Scamio. Contexto y contenedores también tuvieron una revisión visual inicial.
 - Enlaces locales de los documentos revisados.
 - Contraste de los seis colores de texto y estado comprobado sobre blanco y fondo propuesto; falta validar componentes y pantallas finales.
@@ -54,15 +54,20 @@ Prioridad propuesta antes de programar: cerrar stack/sesión y el primer corte; 
 
 Estas comprobaciones no equivalen a una prueba de funcionamiento del backend ni a conformidad completa de accesibilidad.
 
+## Decisiones confirmadas el 17-oct-2026
+
+JP confirmó SvelteKit/TypeScript/Tailwind, Elixir/Phoenix, PostgreSQL, Cognito y BFF con sesión opaca HttpOnly y tokens del proveedor en servidor. Indicó IA por API directa, con Muse Spark 1.3 Contributor o `deepseek-flash` como candidatos. Tras considerar BD en EC2, JP eligió RDS PostgreSQL. Toda operación de infraestructura se documenta en `devops-agents`.
+
+La [decisión de stack](architecture/stack-decision.md) registra esa aprobación y la [propuesta de despliegue](architecture/aws-deployment.md) concreta EC2 con Docker Compose, RDS privado, Nginx, Cloudflare Tunnel y Actions/GHCR. Las filas de la respuesta a Claude conservan lo propuesto en aquella revisión; esta sección actualiza su estado. No acredita recursos creados, integración de modelos ni una nueva aprobación de compra de dominio.
+
 ## Decisiones que faltan
 
-1. Acordar el lenguaje del backend, la identidad y la continuidad del frontend.
-2. Validar alcance de negocio, beneficios de cuenta y conservación de resúmenes.
-3. Completar despliegue AWS, modelo físico, estrategia de sesión y contrato OpenAPI sobre esa base.
-4. Validar nombre de trabajo y dirección visual; después, una pantalla representativa y logo si se requiere.
-5. Elegir proveedor de IA, revisar conservación, entrenamiento y subprocesadores, y definir cuotas y presupuestos. No publicar garantías de privacidad sin respaldo comprobado.
-6. Validar entrega por etapas, mecanismo de continuación y recuperación ante reinicios. Confirmar qué ajustes de Scamio entran en el primer corte; capturas, QR, reportes y compartir siguen fuera.
-7. Aprobar la definición necesaria para la primera entrega antes de iniciar implementación.
+1. Validar conservación de resúmenes y duración de sesiones, casos y backups.
+2. Confirmar tamaño/costo del EC2, punto de entrada Cloudflare, dominio y condiciones operativas sobre la propuesta concreta; implementar y verificar recuperación.
+3. Completar contrato OpenAPI y ejecución de trabajos con plazo y recuperación ante reinicios.
+4. Revisar la pantalla representativa. JP eligió ¿Es estafa? y «Revisa antes de responder» y aprobó provisionalmente la identidad visual 0.1 (logo, favicon, paleta y tipografía). La propuesta móvil/escritorio sigue para revisión en [branding](design/brand.md), todavía sin integrar a la app.
+5. Elegir entre los dos candidatos de IA, revisar las condiciones específicas de API y definir cuotas y presupuesto. Muse Contributor permite uso de contenido para entrenamiento; no se publica una garantía contraria.
+6. Validar la entrega por etapas y los ajustes de Scamio del primer corte; cuenta e historial permanecen solicitados, capturas/QR/reportes/compartir siguen fuera.
 
 ## Primer bloque de implementación tras la validación
 

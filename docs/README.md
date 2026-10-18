@@ -1,23 +1,26 @@
-# Definición de producto y arquitectura
+# Everyday Trust: producto y arquitectura
 
-Los documentos describen el producto objetivo y su diseño previo a la implementación. La validación funcional y visual de los documentos no sustituye la aprobación de JP para cerrar decisiones o empezar a programar.
+Los documentos describen el producto objetivo y su diseño previo a la implementación. JP confirmó el stack el 17-oct-2026: SvelteKit, API Elixir/Phoenix, PostgreSQL, Cognito y BFF. JP eligió RDS PostgreSQL después de considerar alojarlo en EC2. Se conserva la distinción entre diseño, implementación y verificación en vivo.
 
 ## Orden de lectura
 
 1. [Negocio y alcance](business/product.md): usuario, promesa, beneficios de cuenta, límites, ingresos por validar y criterios B01 a B08.
 2. [Mapa del flujo de valor](business/value-stream.md): situación actual supuesta, flujo objetivo y medición de trabajo y espera.
 3. [Experiencia de usuario](design/experience.md): navegación, recorridos, estados, accesibilidad y pruebas de uso.
-4. [Nombre e identidad visual](design/brand.md): candidatos, tono, paleta, logo y componentes propuestos.
+4. [Nombre e identidad visual](design/brand.md): nombre y bajada elegidos, logo, favicon y propuesta de UI para móvil/escritorio.
 5. [Modelo lógico de datos](architecture/data-model.md): titularidad, evidencias, datos temporales, conservación y borrado.
 6. [Arquitectura lógica](architecture/overview.md): responsabilidades, análisis, continuidad y condiciones para varias réplicas.
-7. [Modelo C4 en Structurizr](architecture/workspace.dsl): contexto, contenedores y componentes, con tecnologías pendientes explícitas.
-8. [Decisiones de stack](architecture/stack-decision.md): propuesta, alternativa Go y decisiones pendientes para AWS.
+7. [Modelo C4 en Structurizr](architecture/workspace.dsl): contexto, contenedores y componentes, con tecnologías confirmadas y una vista de despliegue propuesta.
+8. [Decisiones de stack](architecture/stack-decision.md): decisiones confirmadas y ajustes de infraestructura inicial en EC2.
 9. [Contrato funcional de la API](architecture/api-contract.md): recursos, acceso, estados y errores, sin presentarlos como implementados.
-10. [Revisión antes de programar](review.md): trazabilidad B01 a B08, comprobaciones y decisiones pendientes.
+10. [Despliegue AWS, Docker y CI/CD](architecture/aws-deployment.md): EC2/Compose/Nginx, RDS privado, Cloudflare y Actions/GHCR.
+11. [Revisión antes de programar](review.md): trazabilidad B01 a B08, comprobaciones y decisiones pendientes.
 
 Documentos que completan las brechas de la [revisión de Claude](review-claude.md): [fuentes e ingesta](architecture/source-ingestion.md), [contrato del intérprete](architecture/ai-interpretation.md), [evaluación](architecture/evaluation.md) y [evidencia del problema](business/evidence.md). La respuesta punto por punto está en [revisión](review.md#respuesta-a-la-revisión-de-claude).
 
-La [revisión de Scamio](business/scamio-review.md) reúne evidencia, límites y ajustes propuestos de negocio, privacidad y experiencia. No cambia las decisiones de stack pendientes.
+La [revisión de Scamio](business/scamio-review.md) reúne evidencia, límites y ajustes propuestos de negocio, privacidad y experiencia. No cambia el stack confirmado.
+
+La [evaluación de WhatsApp con Zavu](business/whatsapp-zavu.md) propone un canal adicional con el mismo backend. Documenta sandbox, onboarding, costos y tratamiento de datos; no cambia el alcance ni acredita una integración aprobada.
 
 Los wireframes están disponibles como [consulta](diagrams/rendered/wireframe-consultation.svg), [revisión en curso](diagrams/rendered/wireframe-analysis.svg), [historial](diagrams/rendered/wireframe-history.svg) y [beneficio de registro](diagrams/rendered/wireframe-signup.svg). Sus fuentes están en [wireframes.puml](diagrams/wireframes.puml).
 
@@ -28,11 +31,12 @@ Los wireframes están disponibles como [consulta](diagrams/rendered/wireframe-co
 | Infraestructura AWS | Indicada por JP |
 | Backend como API separada | Indicado por JP |
 | Negocio, flujos y alcance | Borrador para revisión |
-| Lenguaje de la API y autenticación | Consulta pendiente: propuesta Phoenix, PostgreSQL y Cognito |
-| Modelo físico y despliegue | Se completan sobre el stack acordado |
+| Web, API, datos y autenticación | Confirmados: SvelteKit, Elixir/Phoenix, PostgreSQL, Cognito y BFF con cookie opaca |
+| Modelo físico y despliegue | RDS elegido por JP; EC2 + Compose + Nginx + Cloudflare Tunnel y Actions/GHCR propuestos, sin desplegar |
 | C4 lógico | Borrador modelado y validado con Structurizr |
-| Nombre y marca | Propuestas, sin selección definitiva |
-| Implementación | En espera de validación de la definición |
+| Nombre y marca | Everyday Trust confirmado para el proyecto y `deep-skill/everyday-trust` para el repo. Web: ¿Es estafa? + «Revisa antes de responder»; identidad visual aprobada provisionalmente; pantallas para revisión |
+| IA | API directa; candidatos Muse Spark 1.3 Contributor y deepseek-flash, selección y privacidad por validar |
+| Implementación | Stack confirmado; migración y despliegue AWS aún sin ejecutar |
 
 ## Entrega del evento y arquitectura objetivo
 
@@ -40,15 +44,15 @@ La columna de entrega es una propuesta de compromiso, pendiente de validar y eje
 
 | Entrega propuesta para el evento | Arquitectura objetivo | Fuera del primer corte o pendiente, con motivo |
 |---|---|---|
-| P0: consulta anónima de texto/enlaces, evidencias y siguiente acción | Web pública y API separada sobre AWS | Lenguaje, servicios y despliegue por acordar; el prototipo Cloudflare no acredita despliegue AWS |
-| P0: explicación y seguimiento acotado, con piso de reglas | Intérprete con contrato, presupuesto y evaluación | Proveedor/modelo por elegir; sospecha sólo por IA identificada como interpretación |
-| P1: cuenta, mayor uso, guardado voluntario e historial, solicitados por JP | Identidad gestionada y acceso por propietario | Cognito, BFF y almacenamiento siguen como propuestas; P1 es orden de ejecución, no exclusión del evento |
+| P0: consulta anónima de texto/enlaces, evidencias y siguiente acción | Web pública y API separada sobre AWS | Stack confirmado; el prototipo Cloudflare no acredita despliegue AWS |
+| P0: explicación y seguimiento acotado, con piso de reglas | Intérprete con contrato, presupuesto y evaluación | Dos candidatos indicados por JP, pendientes de evaluación y condiciones de datos; sospecha sólo por IA identificada como interpretación |
+| P1: cuenta, mayor uso, guardado voluntario e historial, solicitados por JP | Identidad gestionada y acceso por propietario | Cognito, BFF y PostgreSQL confirmados, aún sin implementar; P1 es orden de ejecución, no exclusión del evento |
 | P0: dominios oficiales con procedencia y un feed integrado y probado | Catálogos versionados e ingesta de varias fuentes | Phishing.Database propuesto como primer feed, con licencia contrastada; falta validar versión, frescura e integración. SBS y canales no se anuncian integrados antes de hacerlo |
 | P0: evaluación mínima reproducible y métricas sin texto | Evaluador local/CI e informe ampliado P2 | Calidad y costos aún no medidos; el informe completo puede ampliarse después, las comprobaciones mínimas no se difieren |
 | P0: conservar extracción de números en texto y sus límites | Canales oficiales curados y entrada dedicada P2 | Comparación de remitentes por validar; sin búsqueda de titulares |
 | P0: resultado breve y evidencia ampliable | Experiencia móvil accesible y continuidad de casos | Capturas/PDF/QR, reportes, compartir, extensión y apps diferidos para contener alcance y tratamiento de datos |
 
-Después de aprobar la definición, el primer hito de implementación será una consulta completa en el entorno acordado y su comprobación en ventana privada. La vista de despliegue se completa al cerrar el stack. La entrega del evento vence el 18 de octubre a las 09:00; no se compromete una capacidad por figurar en este objetivo.
+Con el stack confirmado, el primer hito será una consulta completa en el entorno acordado y su comprobación en ventana privada. La [propuesta AWS y Docker](architecture/aws-deployment.md) y su vista C4 ya describen el primer despliegue. La documentación operativa se centraliza en `../devops-agents/docs/hack-the-andes-seguridad.md`, junto con los inventarios AWS y Cloudflare; esos archivos son del workspace de Deep Skill y no se publican con este repo. La entrega del evento vence el 18 de octubre a las 09:00; no se compromete una capacidad por figurar en este objetivo.
 
 ### Orden de ejecución y recortes propuestos
 
@@ -62,7 +66,7 @@ Esta propuesta no elimina cuenta e historial ni aplaza las pruebas mínimas para
 
 ## Cómo mantener los diagramas
 
-PlantUML representa el VSM, los wireframes, el modelo de datos y las secuencias. Structurizr DSL será la fuente única de los diagramas C4 de contexto, contenedores y componentes; sus exportaciones se generarán desde el modelo.
+PlantUML representa el VSM, los wireframes, el modelo de datos y las secuencias. Structurizr DSL es la fuente única de los diagramas C4 de contexto, contenedores, componentes y despliegue; sus exportaciones se generarán desde el modelo.
 
 Para renderizar los diagramas PlantUML con una instalación local:
 

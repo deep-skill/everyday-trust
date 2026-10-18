@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-labelledby="title">
+  <title id="title">¿Es estafa? Símbolo de consulta</title>
+  <path fill="#1D4ED8" d="M15 4h18c6.075 0 11 4.925 11 11v16c0 6.075-4.925 11-11 11H20L7 47V38.5A10.96 10.96 0 0 1 4 31V15C4 8.925 8.925 4 15 4Z"/>
+  <path stroke="#FFF" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.4" d="M18.2 17.6a5.9 5.9 0 0 1 11.4 2.1c0 4.5-5.6 4.5-5.6 8"/>
+  <circle cx="24" cy="34" r="1.85" fill="#FFF"/>
+</svg>

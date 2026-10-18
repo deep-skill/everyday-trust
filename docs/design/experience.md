@@ -59,6 +59,10 @@ Si el riesgo sube sólo por interpretación del texto, la tarjeta dice «Sospech
 
 Mientras hay comprobaciones pendientes, se muestra «Revisión en curso» y las advertencias confirmadas; no se anuncia «sin señales detectadas» como conclusión final. Al guardar se conserva una instantánea finalizada con su cobertura, que puede ser parcial si hubo fallos.
 
+## Propuesta visual para revisar
+
+La [identidad 0.1](brand.md) aplica el nombre y la bajada elegidos por JP a una [consulta interactiva de ejemplo](proposal/index.html), con capturas de móvil y escritorio. Es una revisión separada de la app, sin análisis real, autenticación ni persistencia. Ilustra jerarquía, evidencia ampliable, orientación y beneficio de cuenta; todavía faltan los estados de carga, fallo, cuotas y recorridos completos de auth/historial.
+
 ## Accesibilidad y revisión
 
 Objetivo: WCAG 2.2 AA en las pantallas principales. Navegación por teclado, foco visible, etiquetas de formulario, mensajes de error asociados, cambios de estado anunciados y contraste suficiente. El color no es el único medio para expresar riesgo.

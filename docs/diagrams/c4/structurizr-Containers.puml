@@ -3,8 +3,8 @@ title <size:24>Contenedores lógicos del verificador de mensajes</size>
 
 set separator none
 left to right direction
-skinparam ranksep 20
-skinparam nodesep 5
+skinparam ranksep 60
+skinparam nodesep 25
 hide stereotype
 
 <style>
@@ -84,28 +84,29 @@ hide stereotype
 
 person "==Persona que consulta\n<size:16>[Person]</size>\n\nEvalúa un mensaje y decide su siguiente acción, con o sin cuenta." <<Element-RWxlbWVudCxQZXJzb24=>> as Personaqueconsulta
 person "==Operador\n<size:16>[Person]</size>\n\nMantiene fuentes, costos y funcionamiento sin leer mensajes en logs." <<Element-RWxlbWVudCxQZXJzb24=>> as Operador
-rectangle "==Servicio de identidad\n<size:16>[Software System]</size>\n\nRegistro y acceso a cuentas; Cognito es el candidato sobre AWS." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Serviciodeidentidad
-rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nInterpreta casos y seguimiento con respuesta estructurada y plazo máximo." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as ProveedordeIA
+rectangle "==Servicio de identidad\n<size:16>[Software System]</size>\n\nRegistro, confirmación, recuperación y acceso con Amazon Cognito." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Serviciodeidentidad
+rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nAPI directa: Muse Spark 1.3 Contributor o deepseek-flash; elección y condiciones pendientes." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as ProveedordeIA
 rectangle "==Fuentes verificables\n<size:16>[Software System]</size>\n\nPáginas oficiales de marcas, avisos SBS, feeds de phishing y RDAP, con procedencia." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Fuentesverificables
 
 rectangle "Verificador de mensajes\n<size:16>[Software System]</size>" <<Boundary-VmVyaWZpY2Fkb3IgZGUgbWVuc2FqZXM=>> {
-  database "==Datos persistentes\n<size:16>[Container: Base relacional; motor pendiente]</size>\n\nHistorial, marcas, dominios, canales, políticas, indicadores, avisos y versiones." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as Verificadordemensajes.Datospersistentes
-  database "==Estado temporal y cuotas\n<size:16>[Container: Almacenamiento compartido; servicio pendiente]</size>\n\nCasos con vencimiento, contexto y contadores compartidos entre réplicas." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as Verificadordemensajes.Estadotemporalycuotas
+  database "==Datos persistentes\n<size:16>[Container: PostgreSQL en Amazon RDS]</size>\n\nHistorial, catálogos y evidencia; sesiones BFF en esquema y rol propios." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as Verificadordemensajes.Datospersistentes
+  database "==Estado temporal y cuotas\n<size:16>[Container: Mismo RDS PostgreSQL; TTL y cuotas atómicas]</size>\n\nCasos con vencimiento, contexto y contadores compartidos entre réplicas." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as Verificadordemensajes.Estadotemporalycuotas
   rectangle "==Evaluador\n<size:16>[Container: Herramienta local o CI; por implementar]</size>\n\nEjecuta corpus sintético o saneado y produce métricas versionadas fuera del tráfico de usuarios." <<Element-RWxlbWVudCxDb250YWluZXI=>> as Verificadordemensajes.Evaluador
-  rectangle "==Web\n<size:16>[Container: SvelteKit y Tailwind, propuesta de continuidad]</size>\n\nConsulta abierta, resultado, seguimiento e historial privado." <<Element-RWxlbWVudCxDb250YWluZXI=>> as Verificadordemensajes.Web
-  rectangle "==API\n<size:16>[Container: HTTP JSON; lenguaje pendiente]</size>\n\nAcceso, análisis, conversación, cuotas e historial." <<Element-RWxlbWVudCxDb250YWluZXI=>> as Verificadordemensajes.API
+  rectangle "==Web\n<size:16>[Container: SvelteKit / TypeScript / Tailwind; BFF Node.js]</size>\n\nConsulta abierta, resultado, seguimiento e historial privado." <<Element-RWxlbWVudCxDb250YWluZXI=>> as Verificadordemensajes.Web
+  rectangle "==API\n<size:16>[Container: Elixir / Phoenix; release OTP]</size>\n\nAcceso, análisis, conversación, cuotas e historial." <<Element-RWxlbWVudCxDb250YWluZXI=>> as Verificadordemensajes.API
 }
 
 Personaqueconsulta --> Verificadordemensajes.Web <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta y guarda casos\n<size:16>[HTTPS]</size>"
-Verificadordemensajes.Web --> Verificadordemensajes.API <<Relationship-UmVsYXRpb25zaGlw>> : "Gestiona casos e historial\n<size:16>[HTTPS / JSON]</size>"
-Verificadordemensajes.Web --> Serviciodeidentidad <<Relationship-UmVsYXRpb25zaGlw>> : "Inicia acceso\n<size:16>[OIDC, propuesta]</size>"
+Verificadordemensajes.Web --> Verificadordemensajes.API <<Relationship-UmVsYXRpb25zaGlw>> : "Gestiona consultas\n<size:16>[HTTP / JSON; red Docker interna]</size>"
+Verificadordemensajes.Web --> Serviciodeidentidad <<Relationship-UmVsYXRpb25zaGlw>> : "Gestiona acceso\n<size:16>[OIDC / Code + PKCE]</size>"
+Verificadordemensajes.Web --> Verificadordemensajes.Datospersistentes <<Relationship-UmVsYXRpb25zaGlw>> : "Sesiones BFF cifradas\n<size:16>[PostgreSQL / TLS; rol propio]</size>"
 Verificadordemensajes.API --> Serviciodeidentidad <<Relationship-UmVsYXRpb25zaGlw>> : "Obtiene claves públicas\n<size:16>[HTTPS / OIDC]</size>"
 Verificadordemensajes.API --> ProveedordeIA <<Relationship-UmVsYXRpb25zaGlw>> : "Interpreta contexto minimizado\n<size:16>[HTTPS]</size>"
 Verificadordemensajes.API --> Fuentesverificables <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta evidencia\n<size:16>[HTTPS]</size>"
 Verificadordemensajes.API --> Verificadordemensajes.Datospersistentes <<Relationship-UmVsYXRpb25zaGlw>> : "Lee y guarda datos\n<size:16>[Conexión protegida]</size>"
 Verificadordemensajes.API --> Verificadordemensajes.Estadotemporalycuotas <<Relationship-UmVsYXRpb25zaGlw>> : "Casos y cuotas\n<size:16>[Conexión protegida]</size>"
 Operador --> Verificadordemensajes.Evaluador <<Relationship-UmVsYXRpb25zaGlw>> : "Revisa calidad y costos"
-Verificadordemensajes.Evaluador --> Verificadordemensajes.API <<Relationship-UmVsYXRpb25zaGlw>> : "Evalúa entorno de prueba\n<size:16>[HTTP / fixtures]</size>"
+Verificadordemensajes.Evaluador --> Verificadordemensajes.API <<Relationship-UmVsYXRpb25zaGlw>> : "Ejecuta corpus\n<size:16>[HTTP / fixtures]</size>"
 Operador --> Verificadordemensajes.API <<Relationship-UmVsYXRpb25zaGlw>> : "Aprueba catálogos"
 
 @enduml

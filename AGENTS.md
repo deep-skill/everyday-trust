@@ -1,4 +1,4 @@
-# ¿Es estafa? (provisional), Hack the Andes 2026
+# Everyday Trust, Hack the Andes 2026
 
 Verificador de estafas para peruanos: el usuario pega un mensaje, link o número y recibe veredicto, motivos y qué hacer. Equipo `deepskill` (JP solo), track Seguridad. Evento del 17 oct 9:00 al 18 oct ~14:00.
 
@@ -9,17 +9,25 @@ Leer `.analisis/README.md` (local, ignorado por git): reglas del evento, fuentes
 ## Repo público
 
 - Este repo y su URL se publican en la galería del evento. Nunca commitear llaves, `.dev.vars`, datos de clientes de Deep Skill ni mensajes reales con datos personales de terceros.
-- Las llaves van en `.dev.vars` (local) y como secrets del Worker (`npx wrangler secret put NOMBRE`).
+- En el prototipo, las llaves van en `.dev.vars` (local) y como secrets del Worker (`npx wrangler secret put NOMBRE`). Para AWS, seguir el diseño de secretos de `devops-agents`; nunca hornearlas en imágenes, user data, argumentos de build ni archivos versionados.
 
 ## Stack
 
-### Definición vigente antes de implementar
+### Decisiones vigentes (17-oct-2026)
 
-JP pidió definir y validar negocio, VSM, UX y arquitectura antes de continuar con código. Leer `docs/README.md`. Infraestructura objetivo: AWS, con backend API separado. Lenguaje, autenticación y modelo físico se acuerdan con JP; no inferir su aprobación por instalar una dependencia. El borrador local de Better Auth/D1 quedó detenido y no representa una decisión de arquitectura. Las instrucciones Cloudflare siguientes describen el prototipo existente.
+JP confirmó SvelteKit/TypeScript/Tailwind, API Elixir/Phoenix, PostgreSQL, Cognito y BFF con cookie opaca HttpOnly y tokens del proveedor en servidor. IA por API directa: candidatos `muse-spark-1.3-contributor` y `deepseek-flash`; falta elegir y validar condiciones de datos. JP revisó la opción inicial y eligió RDS PostgreSQL gestionado; no alojar la BD de producción en EC2. Leer `docs/README.md` y `docs/architecture/aws-deployment.md`.
 
-- SvelteKit 5 + Tailwind 4, desplegado como Worker de Cloudflare con static assets (misma receta que `../coneimin-web`): `nodejs_compat` obligatorio y `routes` antes de cualquier `[tabla]` en `wrangler.toml`.
+La documentación operativa de AWS, Docker, Cloudflare, dominio, secretos, costos, backups y recursos se centraliza en `../devops-agents/docs/hack-the-andes-seguridad.md`; leer también las instrucciones de ese repositorio antes de tocar infraestructura. Respetar su preferencia de familia T3a. Registrar allí cada cambio y actualizar inventarios al crear recursos. El repo público conserva diseño reproducible, sin credenciales ni identificadores operativos privados.
+
+El borrador Better Auth/D1 está aislado en `wip/paused-cloudflare-auth`; no representa el stack aprobado. La propuesta física es EC2 con Docker Compose (Nginx, web/BFF, API y cloudflared), RDS privado, Cognito, GitHub Actions y GHCR; pendiente de implementar y comprobar. Las instrucciones Cloudflare siguientes describen el prototipo existente.
+
+- Svelte 5 + SvelteKit 2 + Tailwind 4, desplegado como Worker de Cloudflare con static assets (misma receta que `../coneimin-web`): `nodejs_compat` obligatorio y `routes` antes de cualquier `[tabla]` en `wrangler.toml`.
 - `src/lib/server/signals.ts`: señales verificables (links, números, texto). `src/lib/server/brands.ts`: dominios oficiales; solo entran dominios confirmados, porque un error marcaría phishing como legítimo.
 - `src/lib/server/analyze.ts`: puntaje, veredicto y consejos. `src/routes/api/analyze/+server.ts`: endpoint `POST { text }`.
+
+## Marca y UI
+
+JP confirmó **Everyday Trust** como nombre del proyecto público y autorizó publicar `deep-skill/everyday-trust`. Nombre de la web: **¿Es estafa?**. Bajada: **Revisa antes de responder**. La carpeta local conserva su nombre para no romper otras sesiones. Leer `docs/design/brand.md`. La propuesta visual y SVG están en `docs/design/`; son una revisión separada, con ejemplos sintéticos, sin cambiar aún `src/` ni conectar auth/IA. JP aprobó provisionalmente la identidad visual 0.1 (logo, paleta y tipografía). Las pantallas siguen para revisión; no inferir su aprobación ni la compra de dominio.
 
 ## Comandos
 

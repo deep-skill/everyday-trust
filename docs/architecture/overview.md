@@ -1,6 +1,6 @@
 # Arquitectura lógica del servicio
 
-Estado: propuesta funcional para revisión. AWS y una API separada fueron indicados por JP. El lenguaje, la autenticación y los servicios concretos de despliegue siguen pendientes de acuerdo.
+Estado: diseño funcional para implementar. JP confirmó SvelteKit, Elixir/Phoenix, PostgreSQL, Cognito y BFF el 17-oct-2026. JP eligió RDS para PostgreSQL. La propuesta de despliegue usa EC2 con Docker Compose, Nginx y Cloudflare Tunnel; GitHub Actions y GHCR para entrega. Todavía no se han creado recursos.
 
 ## Responsabilidades
 
@@ -12,15 +12,15 @@ El diseño de [ingesta y catálogos](source-ingestion.md) concreta marcas, domin
 
 ## Vistas C4
 
-[workspace.dsl](workspace.dsl) es la fuente del contexto, los contenedores y los componentes. Las tecnologías pendientes se etiquetan como tales. Los contenedores C4 son unidades lógicas de ejecución o almacenamiento, y no equivalen necesariamente a contenedores Docker.
+[workspace.dsl](workspace.dsl) es la fuente del contexto, los contenedores y los componentes. Las tecnologías confirmadas y las decisiones todavía propuestas se distinguen en el modelo. Los contenedores C4 son unidades lógicas de ejecución o almacenamiento, y no equivalen necesariamente a contenedores Docker.
 
 - Contexto: personas, servicio, identidad, fuentes e IA.
-- Contenedores: web, API, datos persistentes, estado temporal compartido y evaluador local o de CI. El estado temporal es una responsabilidad lógica y puede compartir motor con la base relacional si se aprueba esa propuesta.
+- Contenedores: web, API, datos persistentes, estado temporal compartido y evaluador local o de CI. El estado temporal comparte PostgreSQL con los datos persistentes, con vencimiento comprobado al leer y limpieza programada. Las sesiones del BFF usan un esquema y rol distintos en ese mismo motor.
 - Componentes de API: acceso y cuotas, casos, señales, minimización de datos, política de riesgo, interpretación, historial e ingesta de fuentes.
 
 Vistas generadas: [contexto](../diagrams/rendered/structurizr-Context.svg), [contenedores](../diagrams/rendered/structurizr-Containers.svg) y [componentes](../diagrams/rendered/structurizr-ApiComponents.svg).
 
-El diagrama de despliegue AWS y la selección física de almacenamiento se añadirán al cerrar el stack. C4 de código no se necesita antes de que existan clases o módulos reales.
+La [propuesta física AWS](aws-deployment.md) y la [vista C4 de despliegue](../diagrams/rendered/structurizr-AwsDeployment.svg) muestran el EC2, los servicios Docker y PostgreSQL privado en RDS. La operación se documenta en `devops-agents`, sin presentar la propuesta como desplegada. C4 de código no se necesita antes de que existan clases o módulos reales.
 
 ## Flujo de análisis
 
@@ -66,4 +66,4 @@ El contrato HTTP documenta casos temporales y resultados guardados, con ejemplos
 
 Los informes de evaluación identifican corpus, snapshots, política, instrucciones y modelo; separan errores peligrosos, falsos positivos, abstención, cobertura, latencia y costo. No se mezclan ejecuciones internas con tracción. El ejecutor y su conexión a CI son trabajo pendiente, no una capacidad ya desplegada.
 
-La migración del prototipo conservará su conjunto de regresión como criterio de paridad. El borrador Better Auth/D1 queda fuera de la arquitectura objetivo; su retirada se planificará al aprobar la implementación, sin mezclarla con cambios funcionales.
+La migración del prototipo conservará su conjunto de regresión como criterio de paridad. El borrador Better Auth/D1 queda fuera de la arquitectura objetivo; ya está aislado en `wip/paused-cloudflare-auth` y no se integra a la nueva API.

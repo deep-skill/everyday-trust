@@ -1,8 +1,8 @@
 # Modelo lógico de datos y conservación
 
-Estado: borrador independiente del lenguaje de la API. La definición física seguirá a la validación del stack.
+Estado: modelo lógico sobre PostgreSQL confirmado. JP eligió RDS PostgreSQL para producción; falta implementar migraciones, permisos y comprobar conservación y recuperación.
 
-El modelo conserva resultados que la persona decide guardar y la procedencia de sus evidencias. Las credenciales y la recuperación pertenecen al servicio de identidad que se acuerde; la aplicación guarda su identificador estable, no una copia de la contraseña.
+El modelo conserva resultados que la persona decide guardar y la procedencia de sus evidencias. Las contraseñas y la recuperación pertenecen a Cognito; la aplicación guarda su identificador estable, no una copia de la contraseña.
 
 ## Entidades persistentes
 
@@ -49,6 +49,12 @@ El catálogo de acciones puede comenzar como configuración versionada de la pol
 ![Catálogos y procedencia](../diagrams/rendered/source-catalog.svg)
 
 Fuente editable: [source-catalog.puml](../diagrams/source-catalog.puml).
+
+## Sesiones del BFF
+
+`WebSession` es almacenamiento operativo temporal, separado del historial: hash del identificador opaco, issuer y subject validados, tokens Cognito cifrados, versión de clave, created_at, expires_at y revocación. El navegador sólo recibe una cookie `Secure`, `HttpOnly` y `SameSite` apropiado al flujo; no recibe refresh tokens. El BFF usa un esquema y rol PostgreSQL exclusivos, sin permisos sobre casos e historial. La API no lee los tokens de sesión del BFF.
+
+La clave de cifrado se obtiene fuera de PostgreSQL mediante el rol del servidor. Vencimiento y revocación se comprueban al leer, con limpieza posterior; salir invalida la sesión y la renovación se coordina para evitar carreras. Los secretos de sesión no se incluyen en el historial ni en métricas. La restauración invalida sesiones y casos temporales antes de publicar el servicio. Esta responsabilidad es parte del diseño de sesión, aún sin migración implementada; el ER siguiente se concentra en resultados guardados.
 
 ## Datos temporales del caso
 

@@ -1,6 +1,6 @@
 # Contrato del intérprete de IA
 
-Estado: borrador independiente del proveedor, modelo y lenguaje. Describe comportamiento a implementar después de validar la definición; no implica llamadas habilitadas ni una elección de API.
+Estado: contrato para la API Elixir/Phoenix confirmada. JP indicó API directa y dos candidatos: `muse-spark-1.3-contributor` y `deepseek-flash`. La selección final, las condiciones de datos y los límites monetarios están pendientes; no hay llamadas habilitadas por este documento.
 
 El modelo interpreta un caso y explica las señales disponibles. La política de riesgo de la aplicación decide el resultado final. Una respuesta bien formada no demuestra que sea correcta.
 
@@ -116,3 +116,11 @@ El plazo total se propaga a las dependencias: la llamada dispone del menor tiemp
 Comparar candidatos con el mismo conjunto de [evaluación](evaluation.md), instrucciones, presupuesto y snapshots. Medir errores peligrosos, falsos positivos, abstenciones, referencias inventadas, latencia y costo real por caso. La calidad del español y la comprensión de expresiones locales se comprueban en casos etiquetados y pruebas con usuarios.
 
 Revisar conservación, uso para entrenamiento, subprocesadores, ubicación y configuración antes de enviar datos. La documentación contractual y la medición son necesarias para elegir; este contrato no selecciona proveedor ni promete compatibilidad idéntica entre APIs.
+
+## Candidatos indicados por JP (17-oct-2026)
+
+El adaptador llama al proveedor directamente por HTTPS desde Phoenix; no necesita Bedrock ni un SDK de OpenAI para adoptar un contrato HTTP compatible. Guardar proveedor, modelo solicitado y versión reportada junto a la evaluación reproducible. Un alias que cambia no equivale a una versión congelada.
+
+Meta documenta que el contenido de la modalidad Contributor puede utilizarse para entrenar futuros modelos. Por ello, la propuesta limita `muse-spark-1.3-contributor` a casos sintéticos de evaluación hasta acordar expresamente ese tratamiento. La minimización no garantiza eliminar todos los datos personales. Ver [modalidades de Muse Spark](https://dev.meta.ai/docs/models).
+
+`deepseek-flash` sigue como candidato para el producto. Antes de habilitar mensajes reales, contrastar condiciones específicas de la API sobre conservación, entrenamiento, transferencias y subprocesadores; una política del chat de consumo no acredita las condiciones de una integración. El identificador se contrasta en [los modelos de DeepSeek](https://api-docs.deepseek.com/api/list-models/). Todavía no se afirma una política de no entrenamiento ni se ha ejecutado la comparación de calidad/costo.

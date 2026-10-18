@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>¿Es estafa? · Propuesta visual</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/tokens.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="preview.js" defer></script>
+</head>
+<body>
+  <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.1"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m10.3 4.1-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-2.9l-8-14a2 2 0 0 0-3.4 0ZM12 9v5m0 3v.1"/></symbol>
+  </svg>
+  <div class="preview-notice">Propuesta visual <span aria-hidden="true">·</span> Ejemplos sintéticos, sin análisis real <a href="brand.html">Ver identidad <span aria-hidden="true">↗</span></a></div>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegación principal">
+      <a class="brand" href="index.html" aria-label="¿Es estafa? Inicio"><img src="../assets/mark.svg" width="36" height="36" alt=""><span>¿Es estafa?</span></a>
+      <button class="new-case" data-reset><svg class="icon"><use href="#i-plus"/></svg>Nueva consulta</button>
+      <button class="nav-item" data-modal="history"><svg class="icon"><use href="#i-clock"/></svg>Mis consultas<svg class="icon nav-lock"><use href="#i-lock"/></svg></button>
+      <div class="sidebar-note"><div class="pause-mark" aria-hidden="true"><span></span><span></span></div><p>Una pausa puede<br>hacer la diferencia.</p></div>
+      <div class="account-card"><span class="mini-label">A TU RITMO</span><h2>Vuelve a tus consultas.</h2><p>Con una cuenta puedes guardar los casos que elijas y acceder a más consultas.</p><button class="text-button" data-modal="account">Crear cuenta gratis<svg class="icon"><use href="#i-arrow"/></svg></button></div>
+      <div class="sidebar-footer">Una iniciativa de <strong>Deep Skill</strong></div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <a class="mobile-brand brand" href="index.html"><img src="../assets/mark.svg" width="31" height="31" alt=""><span>¿Es estafa?</span></a>
+        <span class="topbar-caption">Un poco de claridad antes de actuar.</span>
+        <div class="topbar-actions"><button class="quiet-button about-button" data-modal="about">Cómo funciona</button><button class="login-button" data-modal="account">Crear cuenta <svg class="icon"><use href="#i-arrow"/></svg></button></div>
+      </header>
+      <main id="main-content" class="consultation">
+        <section id="entry" aria-labelledby="entry-title">
+          <div class="intro"><div class="eyebrow"><span class="eyebrow-line"></span>MENSAJES CON CONTEXTO PERUANO</div><h1 id="entry-title">Revisa antes<br>de responder<span>.</span></h1><p>¿Ese mensaje te genera dudas? Revisa sus señales y encuentra tu siguiente paso.</p></div>
+          <form id="consult-form" class="composer">
+            <label for="message">¿Qué mensaje recibiste?</label>
+            <textarea id="message" name="message" maxlength="5000" rows="5" placeholder="Pega aquí el mensaje o enlace que te llegó…" aria-describedby="privacy-note character-count preview-help"></textarea>
+            <div class="composer-bottom"><span id="character-count">0 / 5.000</span><button class="primary-button" id="review-button" type="submit" disabled>Revisar mensaje<svg class="icon"><use href="#i-arrow"/></svg></button></div>
+          </form>
+          <p class="privacy-note" id="privacy-note"><svg class="icon"><use href="#i-lock"/></svg><span>Omite claves, códigos, DNI y datos personales.</span></p>
+          <p id="preview-help" class="sr-only">Esta propuesta no analiza texto libre. Puedes recorrerla usando los ejemplos sintéticos de abajo.</p>
+          <div class="example-section"><span class="example-label">¿Prefieres probar primero?</span><div class="example-buttons"><button class="example-button" data-example="relative">Un familiar con otro número<svg class="icon"><use href="#i-arrow"/></svg></button><button class="example-button" data-example="bank">Un supuesto aviso del banco<svg class="icon"><use href="#i-arrow"/></svg></button></div></div>
+          <div class="how-strip" aria-label="Qué encontrarás"><div><span>01</span><p>Las señales</p></div><div><span>02</span><p>El porqué</p></div><div><span>03</span><p>Qué hacer</p></div></div>
+        </section>
+        <section id="case" class="case-view" aria-labelledby="case-title" hidden>
+          <div class="case-heading"><div class="eyebrow">TU CONSULTA <span>· EJEMPLO</span></div><button class="quiet-button" data-reset><svg class="icon"><use href="#i-plus"/></svg>Nueva consulta</button></div>
+          <div class="message-bubble"><span class="mini-label">MENSAJE RECIBIDO</span><p id="submitted-message"></p></div>
+          <article class="result-card" id="result-card">
+            <div class="result-status"><svg class="icon"><use href="#i-alert"/></svg><span id="result-label">Sospechoso</span><span class="status-dot" aria-hidden="true"></span><span class="completion-label">Ejemplo finalizado</span></div>
+            <h1 id="case-title" tabindex="-1">Confirma quién te escribe antes de enviar dinero.</h1>
+            <p class="result-summary" id="result-summary"></p>
+            <p class="interpretation-note" id="interpretation-note">Interpretación de IA, sin corroboración externa del patrón.</p>
+            <div class="next-step"><div class="step-icon"><svg class="icon"><use href="#i-arrow"/></svg></div><div><span class="mini-label">TU SIGUIENTE PASO</span><h2 id="action-title">Contacta a tu familiar por otro canal.</h2><p id="action-copy"></p></div></div>
+            <details class="evidence"><summary>Ver señales y alcance de este ejemplo<svg class="icon"><use href="#i-chevron"/></svg></summary><div class="evidence-body"><ul id="evidence-list"></ul><p>No se consultaron listas, bancos ni proveedores de IA. Este resultado ilustra el diseño; no es una evaluación real.</p></div></details>
+          </article>
+          <section class="interaction-section" aria-labelledby="interaction-title"><div class="section-heading"><h2 id="interaction-title">¿Llegaste a hacer algo?</h2><span>Opcional</span></div><p>Elige lo que ocurrió para ver un ejemplo de orientación.</p><div class="interaction-options"><button class="choice" data-interaction="none" aria-pressed="false">No interactué</button><button class="choice" data-interaction="clicked" aria-pressed="false">Abrí el enlace</button><button class="choice" data-interaction="shared" aria-pressed="false">Compartí datos</button><button class="choice" data-interaction="paid" aria-pressed="false">Pagué</button></div><div class="follow-up" id="follow-up" role="status" hidden><img src="../assets/mark.svg" width="26" height="26" alt=""><p id="follow-up-copy"></p></div></section>
+          <div class="save-case"><div><svg class="icon"><use href="#i-clock"/></svg><p>Ten esta consulta a mano.<span>Guarda sólo los casos que tú elijas.</span></p></div><button class="secondary-button" data-modal="account">Crear cuenta para guardar<svg class="icon"><use href="#i-arrow"/></svg></button></div>
+        </section>
+        <p id="preview-feedback" class="preview-feedback" role="status" hidden></p>
+        <footer class="main-footer"><span>Una orientación para decidir con más contexto.</span><button class="quiet-button" data-modal="limits">Conoce los límites<svg class="icon"><use href="#i-info"/></svg></button></footer>
+      </main>
+    </div>
+  </div>
+  <dialog id="info-dialog" aria-labelledby="dialog-title"><form method="dialog"><button class="dialog-close" aria-label="Cerrar">×</button></form><img src="../assets/mark.svg" width="42" height="42" alt=""><span class="mini-label">PROPUESTA DE EXPERIENCIA</span><h2 id="dialog-title"></h2><p id="dialog-copy"></p><div id="account-benefits" hidden><ul><li>Más consultas disponibles.</li><li>Guardado voluntario de resúmenes.</li><li>Historial privado para retomar o borrar.</li></ul><p class="dialog-note">En esta propuesta no se crean cuentas ni se guardan mensajes. El flujo de Cognito todavía no está conectado.</p></div><form method="dialog"><button class="primary-button">Volver a la consulta<svg class="icon"><use href="#i-arrow"/></svg></button></form></dialog>
+</body>
+</html>
