@@ -170,7 +170,7 @@ defmodule EverydayTrust.Interpreter do
 
     with {:ok,
           %{status: 200, body: %{"choices" => [%{"message" => %{"content" => content}} | _]}}} <-
-           Req.post(url,
+           model_post(url,
              headers: [{"authorization", "Bearer " <> key}],
              json: body,
              redirect: false,
@@ -188,5 +188,12 @@ defmodule EverydayTrust.Interpreter do
     _ -> {:error, :provider_unavailable}
   catch
     :input_limit -> {:error, :input_limit}
+  end
+
+  defp model_post(url, options) do
+    case Application.get_env(:everyday_trust, :test_model_request) do
+      fun when is_function(fun, 2) -> fun.(url, options)
+      _ -> Req.post(url, options)
+    end
   end
 end

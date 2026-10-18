@@ -54,4 +54,4 @@ El contenedor web exige configuración de identidad, origen HTTPS, cifrado y CA 
 
 AWS está en aprovisionamiento. Cognito usa Essentials, rotación de refresh tokens y managed login v2. El primer stack vacío falló por incompatibilidad entre Lite y rotación, se verificó que no tenía usuarios y se eliminó antes de recrearlo. La entrada por Tunnel requiere un token Cloudflare con permisos de escritura, pendiente. Este estado no acredita todavía un despliegue público ni pruebas con Cognito real.
 
-Verificación local de este corte: 65 pruebas Phoenix, 45 pruebas Node, 27 comprobaciones de navegador y chequeo Svelte sin errores ni advertencias.
+Verificación local de este corte: 66 pruebas Phoenix, 45 pruebas Node, 29 comprobaciones de navegador y chequeo Svelte sin errores ni advertencias.

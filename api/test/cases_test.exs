@@ -153,4 +153,63 @@ defmodule EverydayTrust.CasesTest do
     assert {:error, 400, _} = Cases.message(result["id"], @session, nil, "", ["paid", "paid"])
     assert Repo.get!(Case, result["id"]).turns == 0
   end
+
+  test "AI runs after the initial response and persists only final structured output" do
+    parent = self()
+    Application.put_env(:everyday_trust, :ai_provider, "deepseek")
+    Application.put_env(:everyday_trust, :ai_key, "synthetic-test-key")
+    Application.put_env(:everyday_trust, :ai_data_approved, true)
+
+    Application.put_env(:everyday_trust, :test_model_request, fn _, options ->
+      send(parent, {:model_started, self(), Jason.encode!(options[:json])})
+
+      receive do
+        :finish -> :ok
+      after
+        1000 -> :ok
+      end
+
+      {:ok,
+       %{
+         status: 200,
+         body: %{
+           "choices" => [
+             %{
+               "message" => %{
+                 "content" =>
+                   Jason.encode!(%{
+                     "suggested_verdict" => "high_risk",
+                     "scam_type" => "family_emergency",
+                     "cited_signal_ids" => []
+                   })
+               }
+             }
+           ]
+         }
+       }}
+    end)
+
+    on_exit(fn ->
+      for key <- [:ai_provider, :ai_key, :ai_data_approved, :test_model_request],
+          do: Application.delete_env(:everyday_trust, key)
+    end)
+
+    {:ok, result} = Cases.create("Tu código es 4821", @session, nil)
+    assert result["analysis_status"] == "in_progress"
+    assert {:error, 409, _} = Cases.save(result["id"], @session, owner("async-owner"))
+    assert_receive {:model_started, pid, payload}, 500
+    refute payload =~ "4821"
+    send(pid, :finish)
+
+    for _ <- 1..30 do
+      if Repo.get!(Case, result["id"]).analysis_pending, do: Process.sleep(10)
+    end
+
+    {:ok, item} = Cases.get(result["id"], @session, nil)
+    assert item.result["analysis_status"] == "completed"
+    assert item.result["revision"] == 2
+    assert item.result["verdict"] == "suspicious"
+    assert EverydayTrust.Metrics.today().queries["completed"] == 1
+    refute Jason.encode!(item.result) =~ "4821"
+  end
 end
