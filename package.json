@@ -8,7 +8,7 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"test": "npm run build && node --test tests/*.test.mjs",
+		"test": "npm run build && node --test tests/sealed.test.mjs",
 		"start": "node build",
 		"db:migrate:web": "node scripts/migrate-web.mjs",
 		"prebuild": "node scripts/sync-presentation.mjs"

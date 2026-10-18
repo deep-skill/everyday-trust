@@ -1,5 +1,7 @@
 # Revisión de la documentación (Claude Code)
 
+> Archivo histórico. Refleja una revisión o borrador anterior y no el estado actual. Consultar [implementación vigente](../architecture/implementation.md) y [seguridad](../architecture/security-review.md).
+
 Estado: revisión del 17 de octubre de 2026, 15:35, sobre el estado de `docs/` a esa hora. La escribió la sesión de Claude Code que revisa el proyecto en paralelo. Son propuestas: las decisiones siguen siendo de JP.
 
 ## Lo que está sólido

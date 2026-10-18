@@ -1,5 +1,7 @@
 # Invitación a probar el piloto
 
+> Archivo histórico. Refleja una revisión o borrador anterior y no el estado actual. Consultar [implementación vigente](../architecture/implementation.md) y [seguridad](../architecture/security-review.md).
+
 Borradores para los perfiles personales de JP, después de verificar el siguiente despliegue. Los enlaces de cuentas y menciones exactas se completan con JP; no sustituirlos por perfiles inferidos. No incluir cifras de uso sin comprobarlas ni publicar datos recibidos en comentarios privados de la plataforma.
 
 ## Comentario en el post existente de LinkedIn

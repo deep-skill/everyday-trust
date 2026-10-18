@@ -11,9 +11,9 @@ workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contri
             web = container "Web" "Consulta abierta, resultado, seguimiento e historial privado." "SvelteKit / TypeScript / Tailwind; BFF Node.js"
             api = container "API" "Acceso, análisis, conversación, cuotas e historial." "Elixir / Phoenix; release OTP" {
                 access = component "Acceso y cuotas" "Valida identidad, titularidad de casos temporales y presupuesto de operaciones." "Módulo de aplicación"
-                cases = component "Casos" "Entrega evidencia inicial, coordina actualizaciones y mantiene contexto minimizado y cobertura." "Módulo de aplicación"
+                cases = component "Casos" "Entrega evidencia inicial, coordina actualizaciones y mantiene resultado saneado y cobertura; el original no se persiste." "Módulo de aplicación"
                 signals = component "Señales verificables" "Comprueba dominios, fuentes y raíces públicas con red restringida." "Módulo de aplicación"
-                privacy = component "Minimización de datos" "Prepara contexto permitido antes del modelo, estado temporal y guardado; valida también las salidas." "Módulo de aplicación"
+                privacy = component "Saneamiento y contrato" "Restringe persistencia e historial y valida salidas; el piloto envía mensaje completo al modelo." "Módulo de aplicación"
                 policy = component "Política de riesgo" "Conserva el piso de reglas; limita a sospechoso una elevación sólo por interpretación." "Módulo de aplicación"
                 conversation = component "Interpretación y seguimiento" "Contributor recibe mensaje completo y evidencia del piloto; salidas e intenciones validadas." "Adaptador de IA"
                 history = component "Historial" "Guarda resúmenes saneados y controla lectura y borrado por propietario." "Módulo de aplicación"
@@ -25,7 +25,7 @@ workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contri
             temporary = container "Estado temporal y cuotas" "Casos con vencimiento, contexto y contadores compartidos entre réplicas." "Mismo RDS PostgreSQL; TTL y cuotas atómicas" {
                 tags "Database"
             }
-            evaluator = container "Evaluador" "Ejecuta corpus sintético o saneado y produce métricas versionadas fuera del tráfico de usuarios." "Herramienta local o CI; por implementar"
+            evaluator = container "Evaluador" "Ejecuta corpus sintético o saneado y produce métricas versionadas fuera del tráfico de usuarios." "ExUnit / CI; 24 fixtures sintéticos, reglas offline"
         }
 
         visitor -> web "Consulta y guarda casos" "HTTPS"
@@ -39,8 +39,8 @@ workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contri
         api -> sites "Comprueba raíces públicas; corte local" "HEAD / DNS e IP validados"
         api -> database "Lee y guarda datos" "Conexión protegida"
         api -> temporary "Casos y cuotas" "Conexión protegida"
-        operator -> evaluator "Revisa calidad y costos"
-        evaluator -> api "Ejecuta corpus" "HTTP / fixtures"
+        operator -> evaluator "Revisa resultados sintéticos"
+        evaluator -> api "Evalúa reglas sin red ni modelo" "ExUnit / fixtures locales"
 
         web -> access "Inicia una operación"
         access -> identity "Valida identidad" "HTTPS / OIDC"
@@ -52,7 +52,7 @@ workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contri
         signals -> sites "HEAD de raíz; revalida cada salto" "HTTP(S) / IP fijada"
         signals -> database "Consulta snapshots y versiones"
         cases -> policy "Evalúa riesgo"
-        cases -> privacy "Minimiza contexto"
+        cases -> privacy "Restringe contexto persistido"
         cases -> conversation "Explica"
         conversation -> privacy "Valida entrada y salida"
         conversation -> intelligence "Envía contexto completo del piloto" "HTTPS"
@@ -89,7 +89,7 @@ workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contri
                         }
                     }
                 }
-                deploymentNode "Cognito User Pool" "Identidad gestionada; OIDC interactivo completo pendiente." "Amazon Cognito" {
+                deploymentNode "Cognito User Pool" "Acceso, guardado e historial probados en navegador; repetición visual final de logout pendiente." "Amazon Cognito" {
                     softwareSystemInstance identity
                 }
                 secrets = infrastructureNode "Parameter Store" "Secretos cifrados y acceso mediante Instance Profile." "SSM SecureString"

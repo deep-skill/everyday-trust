@@ -1,135 +1,86 @@
-# Implementación del primer corte
+# Estado actual de implementación
 
-Estado: implementación y despliegue AWS público, 18-oct-2026, con Contributor activo para el piloto autorizado. Web: [verifica.deepskill.space](https://verifica.deepskill.space), servida mediante Cloudflare Tunnel sin puertos entrantes en EC2. La API es Phoenix 1.8.15 sobre Elixir 1.18.4/OTP 27; la web usa SvelteKit y adapter-node. PostgreSQL local sirve para desarrollo y pruebas; producción usa RDS privado. Los apartados finales registran los cortes sucesivos y la activación vigente.
+Corte de documentación: 18-oct-2026. Web pública: [verifica.deepskill.space](https://verifica.deepskill.space/). Producción conserva el corte `eb52376`, publicado por [Actions/SSM](https://github.com/deep-skill/everyday-trust/actions/runs/39128376484). La limpieza del prototipo y la documentación de cierre son cambios del repositorio, sin nuevo despliegue.
 
-## Recorrido implementado
+## Qué está construido
 
-`Navegador → SvelteKit/BFF → Phoenix → PostgreSQL`
+| Área | Implementación |
+|---|---|
+| Web | SvelteKit, TypeScript y Tailwind; portada explicativa, guía separada y resultado con motivos, cobertura y siguiente acción |
+| API | Phoenix 1.8.15, Elixir 1.18.4/OTP 27; contrato `/api/v1/*`, credencial interna y autorización por titular |
+| Consulta | Texto/enlaces sin cuenta; señales verificables, sitios, feed e interpretación asíncrona con seguimiento acotado |
+| Cuenta | Cognito con Code/PKCE S256, state y nonce; sesión opaca HttpOnly/Secure/SameSite=Lax y tokens cifrados en servidor |
+| Continuidad | Guardado voluntario e idempotente por cuenta/caso, historial privado, paginación y borrado |
+| Tracción | Visitas aproximadas por sesión/día, consultas y valoraciones agregadas; demos excluidas de consultas y reseñas |
+| Reseñas | Una valoración por caso completado; comentario privado opcional hasta 500 caracteres, fuera de IA, retención de 30 días y borrado con cuenta |
+| Datos | RDS PostgreSQL privado; rol y esquema propios del BFF, rol de API separado y credencial distinta de migración |
 
-El BFF expone `/api/v1/*`, valida el origen de las escrituras y limita cuerpo antes de reenviar. Phoenix requiere además una credencial de servicio interna y valida por separado el access token Cognito cuando existe. Los identificadores de visitante son aleatorios y los de red se seudonimizan con HMAC; el cliente no elige al propietario. El endpoint anterior `/api/analyze` responde 410. El motor TypeScript queda sólo como referencia de regresión y no forma parte del camino de producción.
+El BFF valida origen y cuerpo antes de reenviar; el navegador no puede elegir el propietario. `/api/analyze` devuelve 410 y el motor TypeScript del prototipo se retiró del repositorio. Las reglas de producción y sus pruebas viven en Phoenix.
 
-Cada consulta devuelve primero señales tras hasta cinco comprobaciones de red concurrentes y acotadas. Si hay IA aprobada, devuelve estado pendiente y la web consulta la finalización, con revisión monotónica y plazo de ocho segundos. La web espera hasta 12 segundos para cada petición; un reintento de creación puede consumir otra consulta. El guardado es idempotente por cuenta y caso temporal. No se afirma idempotencia de creación.
+## Análisis, sitios y modelo
 
-Las respuestas de IA sólo seleccionan categorías, ids de señales existentes e intenciones de seguimiento. Las explicaciones persistentes y las acciones se producen en servidor con texto revisado. No se conservan párrafos libres del modelo ni se aceptan teléfonos o enlaces de ayuda generados. Una elevación sólo por interpretación llega como máximo a sospechoso; ninguna salida rebaja el piso verificable.
+La creación entrega las señales disponibles tras comprobaciones de red concurrentes y acotadas. Cuando hay IA pendiente, la web consulta el mismo caso hasta finalizar. Las revisiones son monotónicas; el plazo exterior del caso es de 8 segundos y cada petición web admite hasta 12 segundos. Reintentar una creación puede consumir otra consulta: no se afirma idempotencia de creación.
 
-## Cuenta, datos y límites iniciales
+<a id="comprobación-de-sitios-y-contributor-corte-local"></a>
+### Comprobación de sitios y Contributor
 
-En desarrollo, la consulta anónima no necesita Cognito configurado. La imagen de producción exige la configuración completa antes de arrancar. Registro, verificación y recuperación se delegan a la interfaz gestionada de Cognito. El acceso usa Authorization Code, PKCE S256, state de un solo uso y nonce. Web y API validan firma RS256, issuer, clase de token y cliente; la web comprueba también audiencia y nonce del ID token. Los tokens se cifran con AES-256-GCM en `bff.web_sessions`; el navegador recibe una cookie opaca Secure/HttpOnly/SameSite=Lax. La renovación se serializa con un bloqueo de fila y admite rotación de refresh token.
+La API consulta mediante HEAD sólo la raíz de sitios arbitrarios: omite ruta, query, fragmento, cookies y credenciales. Resuelve IPv4 públicas, fija la IP validada y conserva hostname/SNI y validación TLS. Revalida redirecciones y bloquea redes privadas, loopback, metadata AWS, IPv6, puertos distintos de 80/443 y bajadas HTTPS a HTTP. No descarga HTML ni ejecuta JavaScript. Los acortadores permitidos conservan una resolución acotada del enlace completo; los hosts intermedios también se comparan con el feed.
 
-Los intentos de acceso vencen a los diez minutos y la sesión de cuenta tiene siete días de duración máxima. La clave de cifrado es externa a PostgreSQL; su rotación en este corte invalida las sesiones, sin un anillo de claves. Los roles de ejecución de API y BFF se separan de las credenciales de migración en producción. Las pruebas locales usan credenciales exclusivamente de desarrollo.
+Muse Spark 1.3 Contributor está activo durante el piloto. Recibe el mensaje original completo y todo el análisis; las preguntas se envían completas con el resultado disponible. El original sólo vive en memoria durante el procesamiento, fuera de PostgreSQL, historial y logs. La advertencia de omitir datos personales no equivale a una minimización antes del modelo. [Contrato de IA](ai-interpretation.md).
 
-Valores iniciales de implementación, configurables mediante una revisión posterior de política: cinco consultas anónimas y 25 con cuenta por día UTC; cinco seguimientos por caso, con topes diarios de 10 y 50 respectivamente; 200 análisis por red y 1.000 globales por día; 200 llamadas de IA globales por día. Son límites de operaciones, no un sistema de facturación. El proveedor conserva sus propios límites y presupuesto. El input de Contributor se rechaza si contexto estructurado e instrucciones superan65.536 bytes UTF-8; el adaptador alternativo conserva3.000 bytes; máximo de salida de 600 tokens.
+El modelo no tiene herramientas. Sólo se consumen categorías, ids existentes e intenciones de un contrato cerrado. Títulos, explicaciones y acciones visibles proceden de contenido revisado en servidor. Ninguna salida reduce el riesgo de reglas y una elevación sólo interpretativa llega como máximo a sospechoso. JSON inválido, presupuesto agotado o timeout mantienen señales y declaran cobertura incompleta, sin reintentos automáticos de IA.
 
-Los casos temporales vencen tras una hora, prorrogable por seguimiento hasta cuatro horas desde su creación. El vencimiento se comprueba al leer; una limpieza cada minuto elimina filas vencidas. No se persiste el mensaje original, números, emails ni rutas/query de enlaces. El contexto almacenado sólo contiene la evaluación permitida. Los resúmenes se guardan por elección y tienen lectura/borrado por propietario, con paginación de 20 elementos.
+## Fuentes y cobertura
 
-Eliminar la cuenta exige autenticación de los últimos cinco minutos: borra datos de aplicación, bloquea la identidad mediante un hash de control y solicita `DeleteUser` a Cognito. Si el proveedor falla, devuelve `identity_deletion_pending` y permite reintentar la eliminación sin reabrir el acceso a datos. No se comunica éxito del proveedor antes de recibirlo. Las marcas completadas se limpian tras 24 horas; las pendientes requieren reconciliación. RDS tiene backups automáticos de siete días y protección de borrado. La restauración y reconciliación de borrados siguen pendientes de ejercicio.
+La API combina el catálogo de dominios oficiales, RDAP y Phishing.Database. La ingesta valida tamaño, hosts, cantidad, descenso anómalo y SHA-256; publica una versión atómica bajo exclusión PostgreSQL, sin visitar dominios denunciados.
 
-## Feed y disponibilidad
+El snapshot cargado tiene 391.548 hosts, fue publicado el 2-oct-2026 y descargado el 17-oct. Se trata como histórico aunque la descarga sea reciente. La coincidencia es por host exacto; una ausencia de coincidencias o una fuente incompleta no habilitan por sí solas un resultado sin señales. Un conflicto con el catálogo oficial exige revisión. [Fuentes e ingesta](source-ingestion.md).
 
-La ingesta es un comando operativo, fuera del tráfico de consultas. Requiere archivo de hasta 50 MB, SHA-256, fecha de descarga y fecha de publicación. Valida hosts, cantidad mínima, descenso anómalo y publica atómicamente bajo exclusión PostgreSQL. No visita los dominios denunciados. La coincidencia es por host exacto. Un conflicto con el catálogo oficial se marca para revisión y bloquea un resultado sin señales.
+## Sesión, persistencia y borrado
 
-Una descarga vence tras 48 horas; una publicación de más de siete días se trata como histórica y su reporte tiene peso medio, con cobertura parcial. Publicaciones de más de 30 días no se admiten al importar. Una ausencia de coincidencia en una fuente histórica o no disponible no habilita el resultado verde.
+Cognito y la API validan firma, emisor, cliente y clase del token. El BFF verifica audiencia y nonce del ID token. Los tokens se cifran con AES-256-GCM y la renovación se serializa mediante bloqueo de fila. Los intentos de acceso vencen a los 10 minutos y la sesión de cuenta dura como máximo 7 días. La clave de cifrado vive fuera de PostgreSQL; rotarla invalida sesiones en este corte.
 
-El snapshot inspeccionado corresponde al commit público `12a20bf8dd2b7e78d9d38fc12b3e5c970f79d1a7`, publicado el 2-oct-2026. Se volvió a descargar el 17-oct por la noche y se comprobó su hash Git y SHA-256 `70c6c2e24e6b3484e7ace27b079723e55937bc1f4cbd98bea38a472ec8e37326`. La descarga reciente no actualiza la antigüedad de publicación. No se anuncia como una lista vigente del día.
+Los casos temporales duran una hora, prorrogable por seguimiento hasta cuatro horas desde su creación. El vencimiento se comprueba al leer y una limpieza periódica retira filas vencidas. Sólo se conserva el contexto permitido; los resúmenes no incluyen original, números, emails ni rutas/query de enlaces. Cada lectura y borrado verifica titularidad.
 
-## Integraciones y comprobación
+Eliminar la cuenta exige autenticación de los últimos cinco minutos. Borra datos de aplicación, bloquea la identidad mediante un hash de control y solicita eliminación en Cognito. Un fallo devuelve `identity_deletion_pending` y permite reintentar sin reabrir los datos. Las marcas completadas vencen a las 24 horas; las pendientes requieren reconciliación. Los agregados de tracción sobreviven sin texto ni identidad.
 
-Los adaptadores directos de DeepSeek Flash y Muse Spark Contributor están escritos, con validación de salida y fallback por señales. JP entregó una llave Meta y pidió Contributor; se comprobó con ejemplos ficticios. JP confirmó Contributor para el evento. JP pidió posteriormente contexto completo: mensaje original y resultado íntegro de comprobaciones; preguntas completas con el resultado disponible. Se retiró la reducción a códigos. Las acciones tras clic/datos/pago siguen locales; otras preguntas usan clasificación de intención. La credencial está cifrada y JP autorizó expresamente la activación en la URL pública sin login, comprobada el18-oct. Las comprobaciones del equipo usan datos ficticios. La orientación sin IA usa intenciones y acciones cerradas y lo indica en el resultado.
+## Límites de seguridad y consumo
 
-Las regresiones originales del motor de referencia y las pruebas Phoenix se ejecutan sin red externa. La suite de navegador usa la web compilada, PostgreSQL y JWT RSA de un proveedor simulado que fuerza renovación y rotación. No equivale a una prueba de Cognito real ni envía emails/SMS. Sus helpers sólo se cargan expresamente y se excluyen de las imágenes de producción.
+| Control | Límite vigente |
+|---|---|
+| Entrada | 5.000 caracteres en API y 32 KiB de cuerpo en Nginx/BFF |
+| Nginx | 3 r/s por IP, ráfaga 15; 30 r/s globales, ráfaga 60; 10 conexiones por IP |
+| Consultas por día UTC | 5 anónimas o 25 con cuenta; 200 por red y 1.000 globales |
+| Seguimiento | 5 por caso; 10 anónimos o 50 con cuenta por día |
+| IA | 200 llamadas globales/día entre análisis y preguntas, entrada hasta 65.536 bytes con instrucciones y salida de 600 tokens; conexión de 1 s y respuesta de 6 s |
+| Trabajo de análisis | Hasta 20 tareas supervisadas; no es un límite global de toda pregunta síncrona |
+| Valoraciones por día | 3 por sujeto, 60 por red y 500 globales; una por caso |
 
-CI y publicación manual de imágenes GHCR tienen actions fijadas a commits. La ejecución remota, publicación de paquetes, AWS, Cloudflare y pruebas de restauración se registran por separado en `devops-agents`. Las operaciones de producción están centralizadas allí.
+Las preguntas genéricas reconocidas se orientan localmente sin consumir IA. El filtro no es infalible; la salida del modelo sigue limitada a intenciones cerradas. Las cuotas no son un presupuesto monetario duro ni una garantía frente a DDoS. [Revisión completa](security-review.md) y [reporte de vulnerabilidades](../../SECURITY.md).
 
-## Correcciones de la tercera revisión
+## Cómo se despliega
 
-La API retorna las señales tras sus comprobaciones acotadas. Cuando se habilita un proveedor aprobado, la interpretación se ejecuta en una tarea supervisada con máximo 20 tareas simultáneas. La tarea Contributor captura el texto original sólo en memoria para enviarlo junto a las comprobaciones; el adaptador alternativo mantiene minimización. No se persiste el mensaje ni se registran payloads. La consulta queda `in_progress`, revisión 1, y el cliente consulta el resultado hasta `completed`, revisión 2. Tras ocho segundos, una lectura o la limpieza periódica finaliza un trabajo perdido con IA no disponible. No hay reintentos de llamadas facturables ni resultados verdes si la interpretación queda incompleta. Un reinicio puede perder la interpretación, conservando la evaluación por señales.
+Cloudflare Tunnel mantiene una conexión saliente a EC2 sin puertos entrantes. Nginx sirve como entrada interna a la web/BFF; Phoenix sólo es accesible desde la red de aplicación. RDS es privado y las conexiones verifican CA y hostname. La configuración de producción exige identidad, secretos y origen HTTPS antes de arrancar.
 
-Las reservas de cuotas de sesión, red y servicio se hacen en una transacción corta y se revierten juntas. Los turnos se reservan atómicamente y la llamada externa ocurre fuera de la transacción. El proxy obtiene la IP desde el único salto Nginx confiable: `ADDRESS_HEADER=x-forwarded-for`, `XFF_DEPTH=1`. Nginx reemplaza ese encabezado desde Cloudflare, y EC2 carece de entradas públicas.
+Actions ejecuta checks y publica imágenes amd64 por digest en GHCR, con SBOM y provenance. El deploy usa credenciales temporales OIDC y SSM, un manifiesto privado y migraciones separadas de los roles de ejecución. La operación canónica, Compose/Nginx, inventarios, secretos por referencia y procedimientos viven en `devops-agents`. [Arquitectura AWS](aws-deployment.md).
 
-RDAP utiliza el bootstrap IANA versionado en `api/priv/catalog/rdap-bootstrap.json` y consulta directamente el registro HTTPS correspondiente. RDAP no visita la URL de la persona ni sigue redirecciones generales. Por separado, el nuevo comprobador HEAD del corte local sí consulta raíces públicas con restricciones descritas abajo. La falta de soporte o respuesta se presenta como cobertura parcial.
+## Pruebas y evidencia
 
-`daily_metrics` conserva conteos agregados por día UTC y distingue consultas y demostraciones. Registra finalizaciones, consultas adicionales en una sesión o cuenta, opiniones y errores de solicitudes recibidas por el controlador de creación. No mide personas únicas ni todos los errores de la infraestructura. Las opiniones agregadas sobreviven a la limpieza del caso temporal. Los ejemplos de la interfaz se reconocen en servidor y quedan separados de la tracción. `GET /api/v1/stats` expone sólo estos agregados.
+La suite vigente contiene 109 pruebas Phoenix y 2 pruebas web de cifrado de sesión. Phoenix cubre reglas, redirecciones, JWT, cuotas concurrentes, aislamiento, borrado, reseñas, métricas e ingesta. CI exige formato, compilación sin advertencias, migraciones y pruebas de API, además de tipos, build y pruebas de la web.
 
-El contenedor web exige configuración de identidad, origen HTTPS, cifrado y CA de RDS antes de arrancar. Phoenix exige la misma identidad y, para Meta, `AI_INPUT_MODE=full_context` para el piloto de hackathon. Un fallo transitorio de renovación conserva la sesión y devuelve indisponibilidad, sin convertirla silenciosamente en anónima.
+La evaluación incluida en ExUnit ejecuta 24 fixtures sintéticos offline: 0 verdes peligrosos, 0 falsas alarmas y 6 abstenciones. No mide precisión real ni calidad del modelo. [Método](evaluation.md) e [informe](evaluation-report.json).
 
-AWS está aprovisionado y el despliegue pasó por GitHub Actions con OIDC y SSM. Cognito usa Essentials, rotación de refresh tokens y managed login v2. El primer stack vacío falló por incompatibilidad entre Lite y rotación, se verificó que no tenía usuarios y se eliminó antes de recrearlo. Cloudflare Tunnel ya proporciona la entrada pública. El recorrido OIDC completo en navegador contra AWS sigue pendiente. Doce comprobaciones privadas con dos identidades Cognito reales y RDS verificaron JWT, aislamiento, guardado, feedback, borrado de consultas y eliminación de ambos usuarios en Cognito, sin emails/SMS.
+La suite de navegador acreditó previamente 29 comprobaciones con identidad simulada y una base separada; no se repitió completa en este cierre. Otras 12 comprobaciones usaron Cognito y RDS reales. En navegador privado se comprobaron acceso Cognito, análisis, guardado y lectura del historial. El logout actual usa POST propio con respuesta JSON y navegación a Cognito validada por servidor; pasó las comprobaciones HTTP de origen, sesión y redirección. Falta repetir visualmente ese último recorrido.
 
-Verificación de la versión publicada: 67 pruebas Phoenix, 45 pruebas Node y 29 comprobaciones de navegador. El refinamiento local posterior añade comprobaciones descritas al final.
+La verificación pública del corte desplegado comprobó HTTPS, headers dinámicos, consulta demo, valoración idempotente, comentario privado y retirado, aislamiento entre sesiones y presentación. Las pruebas sintéticas se separan de tracción y sus identidades desechables se eliminaron. La presentación tiene cinco slides HTML y assets con versión de contenido; no se modifican durante esta limpieza.
 
-## Verificación AWS privada
+## Límites y pendientes
 
-GitHub Actions desplegó imágenes amd64 fijadas por digest a través de OIDC y SSM. RDS privado verifica TLS/CA y separa roles de API, BFF y migración. RDS y Cognito tienen protección de borrado activa. Las credenciales temporales de bootstrap y GHCR se eliminaron al completar la operación.
+- Restauración de backups y reconciliación de borrados sin ejercicio; alta, confirmación y recuperación con correo real sin probar.
+- Repetición visual final del logout corregido pendiente. Las comprobaciones HTTP no se presentan como recorrido completo de navegador.
+- Sin Turnstile, presupuesto monetario duro del proveedor ni ensayo de carga verificados; no se afirma una regla WAF personalizada.
+- CSP y otras cabeceras pendientes de equiparar en recursos estáticos. Este cierre no modifica hooks, Nginx ni Cloudflare.
+- EC2 único y RDS Single-AZ; CloudWatch tiene un grupo de logs creado, sin alarmas completas.
+- Comparación de calidad/costo de modelos, proveedor y datos para difusión general pendientes. Capturas, QR, extensión y agentes de PC/celular son roadmap.
 
-El catálogo de 391.548 hosts quedó cargado en RDS con el SHA y fechas descritos arriba. Sigue siendo histórico y de cobertura parcial. El primer importador tardó varios minutos en el host nuevo sin créditos; se permitió un burst temporal acotado y se restauró `standard` al terminar. Un prefiltro IP evita enviar hostnames DNS al parser de direcciones y limita la longitud; el barrido local de 392.178 filas tomó 0,40 segundos. Ese tiempo no mide una ingesta completa en RDS.
-
-La cadena privada Nginx → BFF → API → RDS responde 200/201, aplica CSP y permite crear un intento OIDC con PKCE. Managed login acepta `prompt=login` y `max_age=0`, sin acreditar todavía reautenticación interactiva. Las pruebas sintéticas no se suman a consultas reales en las métricas.
-
-## Verificación pública
-
-El 17-oct se creó un Tunnel administrado y su DNS proxied exclusivo para el hostname del proyecto. El conector usa una credencial propia cifrada en SSM; el token administrativo permanece fuera de EC2. La CLI oficial `cf` y las credenciales se documentan en `devops-agents`.
-
-HTTPS respondió 200 con CSP, HSTS y `Cache-Control: no-store`; HTTP redirige a HTTPS con 308 sólo en el hostname del proyecto. La consulta sintética devolvió 201 y veredicto inconcluso; una escritura desde otro origen fue rechazada con 403. Chrome mostró la consulta de ejemplo bancaria como alto riesgo y cargó el managed login de Cognito. En una ventana privada, el ejemplo familiar devolvió sospechoso y recomendó llamar al número previamente guardado. `/auth/login` devolvió 303 con PKCE S256, state y cookie Secure. Los ejemplos se contabilizan como demostraciones, sin incrementar consultas reales.
-
-Pendientes de integración: recorrido OIDC completo en navegador público y ejercicio de restauración de backups. El piloto Contributor de contexto completo quedó publicado y activado posteriormente, según el registro al final.
-
-## Refinamiento local tras pruebas de uso
-
-La portada explica el problema antes del formulario. Guía, ejemplos ficticios y preguntas frecuentes se movieron a `/como-funciona`, accesible desde la navegación. La columna izquierda queda limitada al alto de la ventana. El resultado usa motivos numerados con títulos y explicaciones de16px, direcciones y límites separados, evidencia y ayuda desplegables, guardado explícito y feedback breve. Se retiraron el contador inicial de turnos y las métricas diarias visibles; sus límites y conteos siguen en servidor. Sin carga de imágenes todavía. Ver [decisiones de experiencia](../design/experience.md#ajustes-tras-la-prueba-desplegada-de-jp-17-oct).
-
-Tipos y build correctos, 45 pruebas Node y 102 Phoenix aprobadas. Revisión manual en Chrome de portada, consulta, ayuda por datos compartidos y pago, explicación del guardado y presentación a 390px. Los selectores E2E se ajustaron al nuevo contenido; la suite completa de navegador no se volvió a ejecutar en esta revisión. Cambios locales pendientes de commit/push y despliegue.
-
-
-## Comprobación de sitios y Contributor, corte local
-
-`Destination` resuelve DNS A, exige que todas las respuestas sean IPv4 públicas y fija la conexión a una IP validada. Mint conserva hostname, SNI y verificación del certificado. HEAD consulta sólo `/`, sin userinfo, ruta, query, fragmento, cookies o credenciales. Sólo puertos80/443, máximo tres sitios por recorrido, encabezados16KiB, plazos por conexión/respuesta y límite exterior de4s por enlace. Cada redirección se valida de nuevo; se bloquean redes privadas, loopback, metadata AWS, IPv6 y destinos locales. No se sigue una bajada HTTPS a HTTP. Una redirección dentro del mismo host no provoca una visita a su ruta.
-
-Los acortadores de la lista permitida conservan su resolución previa mediante HEAD del enlace completo. Tanto esos hosts intermedios como los observados al comprobar raíces se comparan con el feed por host exacto. Los nuevos hosts reciben comprobaciones locales de imitación; las redirecciones a otro dominio son una señal adicional débil. El resultado guardado conserva sólo dominios registrables, nunca subdominios identificadores, rutas o parámetros. No se descarga HTML, no se ejecuta JavaScript y no se conoce la cadena de la ruta concreta de un sitio arbitrario. Una respuesta HTTP sólo acredita que hubo respuesta en esa comprobación. Con red habilitada, una comprobación de sitio incompleta impide un resultado verde; la cobertura distingue ese estado.
-
-Por instrucción expresa de JP, el piloto interno envía `message` original y `analysis` completo, incluidas señales, dominios, cobertura, resultado de reglas y consejos. Las preguntas de seguimiento se envían completas con el resultado disponible, sin recuperar el original porque no se conserva. Las categorías de interacción siguen usando acciones locales. El modelo puede interpretar lenguaje sin señales deterministas; esa elevación queda limitada a sospechoso y no rebaja reglas. Las pruebas verifican igualdad del payload con el texto y el análisis, conservación de5.000 caracteres Unicode y ausencia del original en PostgreSQL. Antes de abrir al público general se cambiará el modelo/modalidad.
-
-Prueba de integración local: consulta ficticia con `https://www.viabcp.com/`, BFF201, sitio `completed`, IA `completed` y `signals_and_ai`. Revisión visual en Chrome de motivos independientes, sidebar y guía separada. Al recargar la API con el corte final, otra consulta conservó señales con IA no disponible y sitio completado. El adaptador anterior de códigos cerrados volvió a responder HTTP200 en4.402ms con códigos ficticios; no se garantiza disponibilidad ni se añaden reintentos automáticos. El modelo C4 y sus exportaciones PlantUML/SVG se actualizaron para incluir los sitios consultados y la entrada completa de Contributor para el piloto interno; Structurizr valida. Sólo datos sintéticos. La versión pública conserva las imágenes anteriores y la IA desactivada hasta commit, publicación y despliegue.
-
-Referencias de implementación: [OWASP SSRF](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html), [Mint HTTP](https://mint.hexdocs.pm/Mint.HTTP.html) y [contrato Contributor](ai-interpretation.md).
-
-
-## Piloto interno de contexto completo
-
-JP indicó que las pruebas de los próximos días son internas de hackathon y autorizó enviar todo el mensaje y su contexto a Muse Spark Contributor. Esta decisión sustituye la restricción anterior a códigos. La salida continúa siendo categorías e ids validados; no se muestra prosa generada ni se atribuye una vulnerabilidad comprobada al modelo. El mensaje sólo vive en memoria durante el análisis, fuera de resultados persistidos y logs.
-
-Los ejemplos dejaron el home y se integraron en las tarjetas de `/como-funciona`. Sus enlaces preparan una consulta mediante ids cerrados `bank`/`family`, sin ejecutar análisis automáticamente. La suite E2E quedó adaptada al nuevo recorrido y compiló, pero no se volvió a ejecutar completa. Validación de este corte:102 Phoenix,45 Node y tipos/build correctos.
-
-Prueba del contexto completo desde Chrome: /como-funciona → ejemplo bancario → formulario preparado → Revisar mensaje → caso completado con signals_and_ai y coverage.ai=completed. Veredicto alto riesgo conservado; destino .example no disponible y cobertura parcial, como corresponde a un fixture. Home sin ejemplos y tarjetas de guía revisadas visualmente.
-
-
-## Publicación del corte39b20a1
-
-El corte de UI, guía separada, comprobación de sitios y adaptador de contexto completo se publicó y desplegó mediante [CI](https://github.com/deep-skill/everyday-trust/actions/runs/39098407864), [imágenes GHCR](https://github.com/deep-skill/everyday-trust/actions/runs/39098426362) y [deploy AWS](https://github.com/deep-skill/everyday-trust/actions/runs/39098550194), todos correctos. La imagen ejecutada corresponde a39b20a1cb07233fc99d80df871e7de0adde739de. Los cambios posteriores de documentación no requieren reconstruir esa imagen.
-
-La verificación pública acreditó HTTPS200 con CSP/HSTS/no-store, HTTP308, guía200 sin ejemplos en el home, PKCE303, escritura desde otro origen403, ejemplo bancario de alto riesgo y raíz oficial completada. Sólo ejemplos ficticios, marcados como demostraciones. La IA permaneció desactivada; su activación general en esta URL pública queda pendiente de definir el alcance del piloto. Secretos, flags, digests y evidencia operativa en devops-agents. No se acredita con esto el recorrido OIDC completo de cuenta ni restore.
-
-## Activación del piloto público, 18-oct
-
-JP autorizó expresamente habilitar Muse Spark Contributor en la URL pública sin login y enviar el contexto completo. Se conservaron las credenciales y las imágenes de aplicación39b20a1. El [despliegue de activación](https://github.com/deep-skill/everyday-trust/actions/runs/39100734515) terminó correctamente. La comprobación pública con ejemplos ficticios acreditó IA completada, alto riesgo bancario conservado y raíz oficial completada, además de HTTPS, guía, PKCE y rechazo de escrituras desde otro origen. El chequeo privado de arranque ahora tiene intentos acotados para tolerar la recreación de la API; no añade reintentos al proveedor de IA.
-
-Una repetición posterior completó la IA del caso bancario, pero no la del enlace oficial, y el chequeo estricto falló. La activación no garantiza disponibilidad del proveedor; la aplicación conserva las señales y declara cobertura incompleta cuando la IA falla. No se amplió el plazo ni se añadieron llamadas automáticas para ocultar ese resultado.
-
-Por solicitud de JP, se detuvo el entorno local y se cerró Docker Desktop. Se eliminaron dependencias, compilaciones y caché regenerables, conservando fuentes, credenciales y volúmenes de datos. La aplicación AWS continúa operativa; para retomar desarrollo local se reinstalan dependencias y se levanta Compose según el README. El detalle de limpieza queda en devops-agents.
-
-
-## Tracción, reseñas y pitch,18-oct
-
-Corte3afb181: métricas discretas al pie, visitas aproximadas por sesión y consultas completadas, sin exponer UTC ni cuotas en la portada. Los totales excluyen demostraciones. Las reseñas requieren el caso completado y su sesión/titular; se validan estrellas y longitud, hay cuotas y un índice único impide duplicados. Sólo se publica el promedio agregado; el comentario llega al equipo, no al modelo. Retención30d y borrado con cuenta, manteniendo agregados anónimos. El modo demo también separa sus reseñas de la tracción.
-
-Cognito ya permitía cuenta e historial. Chrome privado comprobó acceso, análisis, guardado y lectura de historial con una identidad sintética sin emails/SMS. El formulario nativo de Salir falló por Origin:null causado por no-referrer. Se cambió Referrer-Policy a same-origin, manteniendo CSRF. HTTP comprobó logout303 desde el origen propio y403 desde origen ajeno o null. La repetición visual final y revisión del componente nuevo quedaron bloqueadas por cgWindowNotFound en Chrome y Firefox; no se anuncian como aprobadas. El registro con confirmación de correo real y la recuperación de contraseña no se probaron con un buzón real.
-
-CI39102532151 pasó108 Phoenix y45 Node. Imágenes39102641782 construidas con amd64 nativo, SBOM y provenance. El añadido de evaluación, sin cambios al código de aplicación, pasó en CI39102714048 con109 Phoenix/45 Node:24 fixtures offline,0 verdes peligrosos,0 falsas alarmas y6 abstenciones. No mide precisión real ni desempeño de IA.
-
-Despliegue final39103055072 exitoso, mismas imágenes3afb181. Se validó Nginx antes de migrar y se asignaron permisos mínimos explícitos de la nueva tabla al rol API, sin ampliar IAM. Comprobación pública: caso bancario demo de alto riesgo con IA completada, reseña idempotente, comentario privado y retirado, aislamiento entre sesiones, cinco slides y SVG públicos200. Una visita técnica se verificó con dos peticiones y se excluyó después. Ráfaga acotada de30 lecturas de health:18 respuestas200 y12 con429; no fue prueba de carga y no llamó al modelo. Detalle operativo en devops-agents.
-
-[Presentación HTML](../presentation/index.html): cinco slides revisadas en Chrome local antes de perder el control visual, símbolos originales AWS, flechas animadas con pausa/movimiento reducido y notas de tres minutos. Publicada en /presentacion/ y registrada como URL de presentación de la entrega del evento. Borradores de comentario y posts personales en docs/launch/social-copy.md; menciones exactas pendientes de JP.
-
-
-Ajuste posterior155516f: el botón Salir usa un POST al mismo origen que devuelve el destino de salida en JSON y luego navega a Cognito. Conserva form-action self, el chequeo de origen, el borrado de sesión y la revocación. Evita depender de cómo cada navegador aplica la CSP a una redirección de formulario. Tipos/build y45 Node pasaron en local. El diagrama y slides no cambiaron. La repetición visual sigue pendiente del control de ventanas.
-
-
-Cierre155516f: CI39103396264 (109 Phoenix/45 Node), imágenes39103413549 y deploy39103553328 correctos. La verificación pública final repitió reseña demo/privacidad/titularidad y acreditó logout JSON200 con redirect_to, formulario303, origen ajeno/null403, HTTPS/CSP/HSTS/no-store, Referrer-Policy same-origin y Cognito lang=es. IA del caso demo completada. La visita técnica quedó excluida y la identidad QA con sus datos/sesión fue eliminada. El control visual sigue no disponible, por lo que ese último recorrido no se declara probado en navegador. No se enviaron posts en redes: faltan enlaces/menciones exactos de JP y navegador disponible.
+El [historial de cortes y verificaciones](../archive/implementation-history.md) se conserva como archivo histórico, separado de este estado actual.

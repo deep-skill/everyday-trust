@@ -1,10 +1,10 @@
 # AWS, Docker y entrega continua
 
-Estado: despliegue público operativo,18-oct-2026. EC2/Compose, RDS privado, Cognito, Tunnel y entrega por Actions/GHCR/OIDC/SSM están aprovisionados y comprobados; los límites de validación se detallan en implementación. La operación completa se registra en `../devops-agents/docs/hack-the-andes-seguridad.md`.
+Estado: despliegue público operativo, 18-oct-2026. EC2/Compose, RDS privado, Cognito, Tunnel y entrega por Actions/GHCR/OIDC/SSM están aprovisionados y comprobados; los límites de validación se detallan en implementación. La operación completa se registra en `../devops-agents/docs/hack-the-andes-seguridad.md`.
 
-![Despliegue AWS propuesto](../diagrams/rendered/structurizr-AwsDeployment.svg)
+![Despliegue AWS](../diagrams/rendered/structurizr-AwsDeployment.svg)
 
-Fuente reproducible: [workspace.dsl](workspace.dsl). Los nombres de nodos representan responsabilidades, sin afirmar ids, disponibilidad ni recursos existentes. La base durable y el estado temporal son dos responsabilidades C4 dentro de un mismo PostgreSQL físico.
+Fuente reproducible: [workspace.dsl](workspace.dsl). Los nombres de nodos representan responsabilidades; los identificadores privados y la evidencia operativa se mantienen en devops-agents. La exportación es anterior a métricas y reseñas, según el índice de documentación. La base durable y el estado temporal son dos responsabilidades C4 dentro de un mismo PostgreSQL físico.
 
 ## Recorrido de una consulta
 
@@ -23,7 +23,7 @@ Cognito gestiona registro y acceso. Phoenix consulta fuentes permitidas y la API
 | RDS | PostgreSQL soportado, `db.t4g.micro`, Single-AZ y 20 GiB gp3 iniciales | Estado compartido y backups gestionados, separado del host de aplicaciones |
 | Cognito | User Pool y cliente web para BFF | Identidad, confirmación y recuperación |
 | SSM | Parameter Store y administración del servidor | Secretos por referencia y despliegue sin SSH público |
-| CloudWatch | Logs saneados, retención acotada y alarmas | Errores, latencia, disco, memoria, conexiones y fallos de despliegue |
+| CloudWatch | Grupo de logs creado con retención acotada; alarmas pendientes | Base para ampliar observabilidad; no se afirma monitoreo completo |
 | S3 | Bucket privado con cifrado y ciclo de vida | Artefactos de despliegue y snapshots permitidos de fuentes, sin mensajes originales |
 | GitHub Actions y GHCR | Checks, build Linux amd64 e imágenes por digest | Entrega reproducible y rollback de aplicación |
 
@@ -45,9 +45,9 @@ El BFF accede a su esquema de sesiones con un rol propio. Phoenix usa otro rol l
 
 Nginx limita tamaño de cuerpo y conexiones, aplica timeouts compatibles con la entrega inicial y reenvía cabeceras de forma controlada. Los límites de negocio y cuotas permanecen en Phoenix y PostgreSQL. La identidad y la titularidad se validan aunque la red sea interna. Referencia del límite de cuerpo: [Nginx](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size).
 
-Los límites se fijarán sobre el contrato de entrada, actualmente hasta 5.000 caracteres, admitiendo codificación JSON/UTF-8. No se infiere el límite de bytes a partir del número de caracteres. La IP reenviada sólo se acepta desde el camino conocido de Cloudflare; el cliente no puede elegir la clave de su cuota mediante una cabecera.
+Nginx/BFF limitan el cuerpo a 32 KiB y la API admite hasta 5.000 caracteres, considerando JSON/UTF-8. Nginx limita a 3 r/s por IP con ráfaga 15, 30 r/s globales con ráfaga 60 y 10 conexiones por IP; las cuotas de negocio se detallan en la revisión de seguridad. No se infiere el límite de bytes a partir del número de caracteres. La IP reenviada sólo se acepta desde el camino conocido de Cloudflare; el cliente no puede elegir la clave de su cuota mediante una cabecera.
 
-Resultados, mensajes, historial y callbacks de autenticación usan `Cache-Control: no-store`; sólo los recursos estáticos públicos tienen caché. Se excluyen cuerpos, cookies, tokens y enlaces completos de logs y trazas. Cloudflare procesa tráfico antes de la minimización de Phoenix y debe figurar en la información de tratamiento de datos.
+Resultados, mensajes, historial y callbacks de autenticación usan `Cache-Control: no-store`; sólo los recursos estáticos públicos tienen caché. Se excluyen cuerpos, cookies, tokens y enlaces completos de logs y trazas. Cloudflare procesa tráfico antes del saneamiento para persistencia de Phoenix y debe figurar en la información de tratamiento de datos.
 
 Cloudflare Tunnel permite conexiones salientes sin puertos de entrada y funciona en todos los planes. WAF y rate limiting dependen del plan: Free incluye el conjunto gratuito de reglas gestionadas y una regla de rate limiting. No se promete el WAF completo ni protección de IA por tener una API key. Los mensajes de fraude pueden contener texto que active reglas; comprobar casos sintéticos antes de ajustar excepciones específicas. Fuentes: [Tunnel](https://developers.cloudflare.com/tunnel/) y [disponibilidad WAF](https://developers.cloudflare.com/waf/).
 
@@ -66,15 +66,15 @@ Las migraciones siguen cambios compatibles en etapas; restaurar un backup no es 
 
 El EC2 obtiene permisos mediante Instance Profile; no se copian access keys AWS a `.env`. Los secretos de aplicación se guardan como parámetros cifrados o un almacén gestionado equivalente, por referencia, y se materializan con permisos mínimos. No entran en imágenes, user data, argumentos de build, comandos visibles ni stdout de Actions/SSM. El token general de administración Cloudflare no se instala en el contenedor del túnel; cloudflared recibe sólo su credencial de ejecución.
 
-Se proponen backups automáticos RDS durante siete días, protección contra borrado y snapshot antes de una migración de riesgo. El objetivo de recuperación y su costo se validan con una restauración aislada: conectar con TLS, comprobar datos y permisos, invalidar sesiones/contexto temporal y conciliar borrados posteriores antes de volver a publicar. No se afirma un RTO/RPO sin probarlo. La política de datos debe explicar la expiración de copias; restaurar no habilita reponer silenciosamente casos eliminados.
+RDS tiene backups automáticos durante siete días y protección contra borrado. Antes de una migración de riesgo se requiere un snapshot; el ejercicio de restauración sigue pendiente. El objetivo de recuperación y su costo se validan con una restauración aislada: conectar con TLS, comprobar datos y permisos, invalidar sesiones/contexto temporal y conciliar borrados posteriores antes de volver a publicar. No se afirma un RTO/RPO sin probarlo. La política de datos debe explicar la expiración de copias; restaurar no habilita reponer silenciosamente casos eliminados.
 
 El primer despliegue tiene un EC2 y RDS Single-AZ. Para mayor disponibilidad, separar réplicas de aplicación y pasar RDS a Multi-AZ, con pools y cuotas compartidos ya comprobados. ECS Fargate queda como evolución posible; el diseño modular no exige Kubernetes, Redis, RDS Proxy ni un ALB en el primer corte.
 
 ## Presupuesto y dominio
 
-Cotizar en `us-east-1`, sin asumir que un crédito histórico cubre el gasto actual. EC2 T3a sigue la preferencia operativa de Deep Skill. La base propuesta incluye cómputo, almacenamiento y una IPv4; IA, transferencia, logs, copias adicionales, identidad y dominio se calculan aparte. Los importes y la evidencia de consulta a AWS Pricing están en el documento de `devops-agents`.
+Cotizar en `us-east-1`, sin asumir que un crédito histórico cubre el gasto actual. EC2 T3a sigue la preferencia operativa de Deep Skill. La base desplegada incluye cómputo, almacenamiento y una IPv4; IA, transferencia, logs, copias adicionales, identidad y dominio se calculan aparte. Los importes y la evidencia de consulta a AWS Pricing están en el documento de `devops-agents`.
 
-Para la demo se propone `verifica.deepskill.space`, pendiente de crear el registro. El dominio propio se elige con el nombre: revisar disponibilidad en el registrador, registro, renovación, titular y presupuesto antes de comprar. Consultar DNS o RDAP no asegura que se pueda registrar. Como referencia, [Punto.pe](https://punto.pe/tarifas.php) publica S/110 por un año de `.pe` o `.com.pe`, con impuestos; no es una cotización ni prueba de disponibilidad de un nombre concreto.
+La demo usa [verifica.deepskill.space](https://verifica.deepskill.space/), con DNS y Tunnel operativos. No se compró un dominio adicional para este corte. La elección y compra de un dominio propio quedan fuera del cierre.
 
 ## Comprobaciones antes de anunciarlo en vivo
 

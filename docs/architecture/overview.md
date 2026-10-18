@@ -1,69 +1,45 @@
 # Arquitectura lógica del servicio
 
-Estado: diseño funcional para implementar. JP confirmó SvelteKit, Elixir/Phoenix, PostgreSQL, Cognito y BFF el 17-oct-2026. JP eligió RDS para PostgreSQL. La propuesta de despliegue usa EC2 con Docker Compose, Nginx y Cloudflare Tunnel; GitHub Actions y GHCR para entrega. Todavía no se han creado recursos.
+Estado al 18-oct-2026: aplicación desplegada en AWS. SvelteKit y BFF Node, API Elixir/Phoenix, RDS PostgreSQL privado, Cognito y EC2 con Docker Compose/Nginx/Cloudflare Tunnel. GitHub Actions, GHCR, OIDC y SSM entregan imágenes inmutables. El estado comprobado y los límites están en [implementación](implementation.md).
 
 ## Responsabilidades
 
-La web presenta el caso y sus evidencias. La API controla acceso, cuotas, análisis, seguimiento y guardado. Un proveedor de identidad resuelve las cuentas; la base de aplicación conserva resultados privados y procedencia. El proveedor de IA interpreta el caso dentro de los límites de la política de riesgo.
+La web presenta la consulta, evidencias, ayuda, cuenta e historial. El BFF protege la sesión y reenvía sólo rutas permitidas. La API valida identidad y titularidad, calcula señales, conserva el piso de riesgo y aplica cuotas compartidas en PostgreSQL. Las fuentes se actualizan mediante un comando operativo fuera de las solicitudes de usuarios.
 
-El backend comienza como una aplicación modular con un contrato HTTP versionado. Las responsabilidades de verificación, conversación e historial no requieren microservicios separados. La actualización de fuentes ocurre fuera de la petición del usuario, con trabajos acotados y datos versionados.
-
-El diseño de [ingesta y catálogos](source-ingestion.md) concreta marcas, dominios, canales oficiales, indicadores de amenaza y avisos regulatorios. Distingue datos ya usados por el prototipo de copias locales y capacidades pendientes. El [contrato de interpretación](ai-interpretation.md) define entrada, salida, validación y presupuesto del modelo; el [evaluador](evaluation.md) comprobará calidad sobre un entorno de prueba, fuera de las consultas de personas.
-
-## Vistas C4
-
-[workspace.dsl](workspace.dsl) es la fuente del contexto, los contenedores y los componentes. Las tecnologías confirmadas y las decisiones todavía propuestas se distinguen en el modelo. Los contenedores C4 son unidades lógicas de ejecución o almacenamiento, y no equivalen necesariamente a contenedores Docker.
-
-- Contexto: personas, servicio, identidad, fuentes e IA.
-- Contenedores: web, API, datos persistentes, estado temporal compartido y evaluador local o de CI. El estado temporal comparte PostgreSQL con los datos persistentes, con vencimiento comprobado al leer y limpieza programada. Las sesiones del BFF usan un esquema y rol distintos en ese mismo motor.
-- Componentes de API: acceso y cuotas, casos, señales, minimización de datos, política de riesgo, interpretación, historial e ingesta de fuentes.
-
-Vistas generadas: [contexto](../diagrams/rendered/structurizr-Context.svg), [contenedores](../diagrams/rendered/structurizr-Containers.svg) y [componentes](../diagrams/rendered/structurizr-ApiComponents.svg).
-
-La [propuesta física AWS](aws-deployment.md) y la [vista C4 de despliegue](../diagrams/rendered/structurizr-AwsDeployment.svg) muestran el EC2, los servicios Docker y PostgreSQL privado en RDS. La operación se documenta en `devops-agents`, sin presentar la propuesta como desplegada. C4 de código no se necesita antes de que existan clases o módulos reales.
+Cognito gestiona identidad. El modelo interpreta el mensaje y los resultados de comprobación; no recibe herramientas ni decide permisos, cuotas o acciones bancarias. La API valida su salida y selecciona explicaciones y consejos revisados.
 
 ## Flujo de análisis
 
-1. La API valida entrada, sesión temporal y cuotas con actualización atómica.
-2. Extrae señales locales usando el original sólo durante el procesamiento de entrada. No lo incorpora a logs. Minimiza datos antes de conservar contexto o preparar una petición al modelo.
-3. Entrega advertencias disponibles, acciones y comprobaciones pendientes sin esperar a fuentes lentas ni a la IA. Sin evidencia suficiente, el resultado provisional es indeterminado; nunca una garantía de seguridad.
-4. Completa consultas externas con plazo máximo. El corte local comprueba la raíz pública del sitio con HEAD, DNS/IP fijados y redirecciones limitadas, sin visitar la ruta concreta ni ejecutar contenido. Recalcula reglas; Contributor recibe el mensaje completo y el resultado de comprobaciones dentro del presupuesto del piloto autorizado por JP, activo en la URL pública. Ver los límites en [implementación](implementation.md#comprobación-de-sitios-y-contributor-corte-local).
-5. Valida estructura, datos permitidos y piso de riesgo. Actualiza evaluación, evidencias, cobertura y estado del caso. Un fallo marca la comprobación como no disponible y permite finalizar con cobertura parcial.
+1. El BFF valida origen y cuerpo; Phoenix exige credencial interna y valida la identidad de cuenta cuando existe. La API aplica las cuotas con actualización atómica.
+2. Extrae señales del mensaje, compara dominios oficiales y alertas conocidas, y realiza comprobaciones externas acotadas. El original no entra a logs ni a PostgreSQL.
+3. Entrega señales y cobertura inicial. Si hay interpretación pendiente, la web consulta el mismo caso hasta obtener el resultado final. Una advertencia sustentada no espera a la IA.
+4. Durante el piloto, Contributor recibe el mensaje original completo y todo el resultado del análisis, incluidos enlaces y números presentes en el texto. Las preguntas se envían completas con el resultado disponible. No se minimiza esa entrada al modelo; la restricción se aplica al contexto persistido y al historial.
+5. La salida estructurada se valida. No puede rebajar el riesgo de reglas; una elevación sólo por interpretación llega como máximo a sospechoso. Un fallo conserva señales y declara cobertura incompleta.
 
-La combinación distingue procedencia: el modelo puede elevar por interpretación hasta sospechoso, aun sin una señal de reglas. Alto riesgo exige sustento adicional y ninguna interpretación rebaja el piso determinista. Esa diferencia se conserva en la respuesta y el historial.
+La comprobación de un sitio usa HEAD de la raíz, omite ruta y parámetros y fija DNS/IP públicos, con redirecciones revalidadas. Los acortadores permitidos conservan su resolución acotada. No se analiza HTML ni se ejecuta JavaScript. Ver [sitios y Contributor](implementation.md#comprobación-de-sitios-y-contributor-corte-local).
 
-La propuesta de contrato usa la creación del caso para entregar la evaluación inicial y consultas al mismo recurso para recuperar actualizaciones. El mecanismo de continuación y entrega se cerrará con el stack; el requisito es no retener advertencias por esperar una explicación. No se presupone un servicio adicional ni se elige entre sondeo y streaming todavía.
+## Datos, continuidad y métricas
 
-Los trabajos tienen un plazo total, estado compartido y finalización explícita. Al diseñar su ejecución se debe resolver qué ocurre si una réplica reinicia: recuperar el trabajo permitido o cerrar las comprobaciones pendientes como no disponibles al vencer el plazo. No se admite un caso indefinidamente «en curso».
+Casos y cuotas comparten RDS con vencimiento comprobado al leer y limpieza de filas vencidas. El guardado es voluntario e idempotente por cuenta/caso. El historial conserva un resumen saneado y evidencia permitida, sin mensaje original, números ni rutas de enlaces. Retomar un caso guardado recupera ese resumen, no el original.
 
-Un fallo o timeout de la IA mantiene el resultado por reglas. La ausencia de una fuente no se traduce en una comprobación satisfactoria. Los enlaces externos se muestran como evidencia sin hacerlos el camino principal de acción.
+Las sesiones opacas del BFF usan esquema y rol propios; los tokens Cognito se cifran en servidor. Toda lectura y escritura de casos vuelve a comprobar titularidad. La renovación se serializa y la eliminación de cuenta exige autenticación reciente.
 
-La minimización preserva las señales necesarias para comprobar dominios y patrones; no reemplaza indiscriminadamente números o partes de URL antes de analizarlos. El modelo recibe sólo contexto permitido, con posibles DNI, tarjetas, códigos y datos de contacto omitidos o sustituidos. Su detección puede fallar: se limita el contexto, se valida también la salida y se informa al usuario. La política de conservación y entrenamiento del proveedor se valida antes de integrar la IA.
+Las métricas agregan visitas aproximadas, consultas y valoraciones, separando demostraciones. Los comentarios de reseñas son privados, no van al modelo y tienen retención limitada. Estas cifras no prueban personas únicas ni fraudes evitados.
 
-![Secuencia de análisis](../diagrams/rendered/sequence-analysis.svg)
+## Vistas C4
 
-## Continuidad y guardado
+[workspace.dsl](workspace.dsl) es la fuente lógica de contexto, contenedores, componentes y despliegue. Las responsabilidades temporales y durables comparten un mismo PostgreSQL físico. Los contenedores C4 son unidades lógicas, no necesariamente contenedores Docker independientes.
 
-Los casos temporales están asociados a una sesión protegida y vencen. Si se ejecutan varias réplicas, comparten su estado; no se exige que el usuario vuelva a la misma instancia. El backend minimiza antes del estado temporal y aplica un saneamiento más restrictivo basado en campos permitidos antes de guardar; vuelve a comprobar titularidad al listar, retomar o borrar. El historial recibe una instantánea finalizada y su cobertura, sin sobrescribir silenciosamente evidencia histórica.
+Vistas exportadas: [contexto](../diagrams/rendered/structurizr-Context.svg), [contenedores](../diagrams/rendered/structurizr-Containers.svg), [componentes](../diagrams/rendered/structurizr-ApiComponents.svg) y [AWS](../diagrams/rendered/structurizr-AwsDeployment.svg). Estas exportaciones corresponden al corte anterior a métricas y reseñas; no se regeneraron para el cierre y pueden conservar descripciones anteriores del piloto. La fuente DSL y esta documentación describen el estado actual.
 
-La conversación retoma un caso temporal o el resumen de uno guardado. Puede recibir categorías opcionales de interacción, como clic, datos compartidos o pago, sin los valores involucrados. Todo turno atraviesa la misma minimización. Se trata todo mensaje recibido como contenido no confiable. Los resultados del modelo no conceden permisos, cambian cuotas, modifican fuentes oficiales ni ejecutan acciones en bancos.
+## Entrega y operación
 
-![Secuencia de guardado y retorno](../diagrams/rendered/sequence-save.svg)
+El recorrido público es `Cloudflare → Tunnel → Nginx → SvelteKit/BFF → Phoenix → RDS`. EC2 no tiene puertos entrantes; RDS es privado y verifica TLS. [AWS y entrega continua](aws-deployment.md) detalla el despliegue; la operación, secretos por referencia, inventarios y restauración se documentan en `devops-agents`.
 
-Fuentes editables: [sequences.puml](../diagrams/sequences.puml).
+Un EC2 y RDS Single-AZ no ofrecen alta disponibilidad. Las cuotas y sesiones ya comparten estado, pero varias réplicas requieren dimensionar pools y concurrencia total, comprobar recuperación y respetar los límites del proveedor. No se promete cero downtime.
 
-## Escalabilidad y operación
+## Validación
 
-La API puede tener varias réplicas si las cuotas, sesiones temporales y datos durables tienen consistencia compartida. El tamaño de los pools de conexiones y los límites de llamadas externas se calculan para la suma de réplicas. Aumentar instancias no elimina las cuotas del proveedor de IA.
+La [evaluación reproducible](evaluation.md) ejecuta 24 fixtures sintéticos con reglas offline desde ExUnit/CI y produce un [informe versionado](evaluation-report.json). No evalúa calidad del modelo, prevalencia real, latencia externa ni costo. Las pruebas Phoenix cubren reglas, fallos, cuotas, identidad, titularidad, borrado e ingesta; las web cubren el cifrado de sesiones.
 
-Se requieren límites de entrada y salida, concurrencia acotada, caché con caducidad, cancelación al vencer el plazo y reintentos sólo para operaciones idempotentes. Los trabajos de fuentes usan exclusión para no duplicar una actualización al escalar.
-
-Las métricas separan tiempo a primera ayuda y a evaluación final; incluyen cobertura parcial, errores de dependencia y consumo por operación. El feedback opcional mide utilidad, sin usarse como verdad de fraude ni cambiar listas automáticamente. Los logs contienen identificador de petición, versión de política y estado; excluyen texto, números, tokens, cookies y enlaces completos.
-
-## Contrato y validación
-
-El contrato HTTP documenta casos temporales y resultados guardados, con ejemplos sintéticos. Los tests de aceptación deben recorrer B01 a B08, aislamiento entre cuentas, vencimiento de casos, idempotencia, cuotas concurrentes, pérdida de dependencias e inyección de instrucciones en el mensaje.
-
-Los informes de evaluación identifican corpus, snapshots, política, instrucciones y modelo; separan errores peligrosos, falsos positivos, abstención, cobertura, latencia y costo. No se mezclan ejecuciones internas con tracción. El ejecutor y su conexión a CI son trabajo pendiente, no una capacidad ya desplegada.
-
-La migración del prototipo conservará su conjunto de regresión como criterio de paridad. El borrador Better Auth/D1 queda fuera de la arquitectura objetivo; ya está aislado en `wip/paused-cloudflare-auth` y no se integra a la nueva API.
+El acceso Cognito, guardado y lectura de historial se comprobaron en navegador privado. El logout corregido pasó por HTTP; su repetición visual final, alta/recuperación con correo real y restauración de backups siguen pendientes. [Contrato de IA](ai-interpretation.md) y [controles de seguridad](security-review.md) delimitan lo que se afirma.

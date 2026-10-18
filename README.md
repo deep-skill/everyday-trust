@@ -1,27 +1,44 @@
-# Everyday Trust
+# Everyday Trust · ¿Es estafa?
 
-**¿Es estafa? · Revisa antes de responder.**
+Verificador de mensajes sospechosos con contexto peruano. Pegas un mensaje o enlace y recibes señales de riesgo, motivos y un siguiente paso antes de compartir dinero o datos.
 
-Verificador de mensajes sospechosos con contexto peruano, por Deep Skill para Hack the Andes 2026, track Seguridad. Everyday Trust es el proyecto público; ¿Es estafa? es su primera web.
+Puedes empezar sin cuenta. Al registrarte tienes mayor uso, guardado voluntario e historial privado.
 
-El usuario consulta sin cuenta y recibe señales, un resumen y un siguiente paso. Con Cognito puede acceder a mayor uso, guardar voluntariamente resúmenes, consultar su historial privado y borrar consultas o su cuenta. La UI usa la [identidad visual provisional](docs/design/brand.md).
+[Probar la web](https://verifica.deepskill.space/) · [Ver presentación](https://verifica.deepskill.space/presentacion/) · [Repositorio](https://github.com/deep-skill/everyday-trust)
 
-## Estado comprobable
+![Arquitectura desplegada en AWS](docs/presentation/architecture.svg)
 
-Web pública: **[verifica.deepskill.space](https://verifica.deepskill.space)**. Implementación desplegada en AWS: SvelteKit/TypeScript/Tailwind, BFF Node, API Elixir/Phoenix, RDS PostgreSQL privado y Cognito Essentials. Incluye OIDC/PKCE, cookies opacas, tokens cifrados, autorización por propietario, cuotas atómicas, vencimiento y borrado. El corte desplegado tiene108 pruebas Phoenix y45 Node aprobadas, también verificadas por CI. La suite de navegador acreditó previamente 29 comprobaciones con identidad simulada; no se volvió a ejecutar completa en este refinamiento. Otras 12 comprobaciones integran Cognito y RDS reales con dos cuentas sintéticas, eliminadas al finalizar y sin envío de emails/SMS. Se comprobaron acceso Cognito, guardado y lectura de historial en Chrome privado. El cierre de sesión se corrigió y pasó por HTTP; su repetición visual quedó pendiente al perderse el control de ventanas.
+## Cómo funciona
 
-La ingesta de Phishing.Database valida snapshots y publica una versión atómica. El snapshot contrastado fue publicado el 2-oct: se trata como histórico y no como una comprobación vigente del día. La API conserva cobertura y fechas; la interfaz explica sus límites en lenguaje sencillo. El piloto de hackathon usa Contributor con el mensaje completo y todos los resultados de comprobación, por decisión expresa de JP, incluida su activación en la URL pública sin login. El original no se guarda en el historial; antes de la difusión general se revisará el modelo/modalidad. La guía, la nueva UI y las comprobaciones de sitios están desplegadas; la IA pública completó los ejemplos sintéticos de verificación.
+- **Reglas verificables:** detecta pedidos de claves, presión para actuar e imitaciones de marcas y dominios oficiales.
+- **Alertas conocidas:** compara hosts con un snapshot versionado de Phishing.Database y muestra su cobertura; una ausencia de coincidencias no garantiza seguridad.
+- **Destino del enlace:** comprueba la raíz pública mediante HEAD, con DNS/IP fijados y redirecciones revalidadas. Omite la ruta y los parámetros; los acortadores permitidos tienen resolución acotada.
+- **IA con piso de reglas:** Muse Spark Contributor recibe el mensaje completo y la evidencia durante el piloto. La salida estructurada puede elevar la sospecha, pero nunca rebajar el riesgo detectado por reglas.
+- **Límites por capas:** controles de entrada, cuotas atómicas en PostgreSQL y topes globales de llamadas al modelo limitan uso y consumo.
 
-CI, imágenes amd64 en GHCR y despliegue AWS por OIDC/SSM ejecutados correctamente. EC2 no tiene puertos entrantes; Cloudflare Tunnel sirve el acceso público. Se verificaron la página y una consulta anónima en Chrome, además de HTTPS, CSP, consulta por API y redirección PKCE a Cognito. La [implementación](docs/architecture/implementation.md) distingue estas capacidades de la [arquitectura objetivo](docs/architecture/aws-deployment.md).
+## Estado actual
+
+Desplegado en AWS: SvelteKit y BFF Node, API Elixir/Phoenix, RDS PostgreSQL privado y Cognito. Cuenta con consulta anónima, ayuda acotada, acceso, historial privado, borrado, métricas agregadas y valoraciones con comentario privado. El texto original no se persiste en el historial ni en logs. EC2 no expone puertos entrantes; el acceso público usa Cloudflare Tunnel.
+
+La [implementación](docs/architecture/implementation.md) detalla capacidades y evidencia. Las [decisiones técnicas](docs/architecture/stack-decision.md) explican el stack y las alternativas descartadas.
+
+## Mapa del repositorio
+
+```text
+api/            API Phoenix; pruebas en api/test/
+src/            Web SvelteKit y BFF
+tests/          Pruebas web en sealed.test.mjs
+tests/e2e/      Pruebas de navegador con identidad simulada
+docs/           Negocio, UX, arquitectura y presentación
+```
 
 ## Desarrollo local
 
-Requisitos: Node 24, Docker/Compose. Elixir y PostgreSQL se ejecutan en contenedores.
+Requisitos: Node 24 y Docker Compose. Elixir y PostgreSQL se ejecutan en contenedores.
 
 ```bash
 npm ci
 cp .env.example .env
-
 docker compose -f compose.dev.yml up -d --build
 docker compose -f compose.dev.yml exec api-dev mix deps.get --check-locked
 docker compose -f compose.dev.yml exec api-dev mix ecto.setup
@@ -35,47 +52,31 @@ docker compose -f compose.dev.yml exec api-dev mix phx.server
 npm run dev
 ```
 
-La consulta anónima funciona sin configurar Cognito ni IA. El registro aparece como pendiente hasta completar la configuración de identidad. La configuración local desactiva consultas de red por defecto; para probarlas conscientemente, pasar NETWORK_CHECKS=true al proceso de API. El historial nunca conserva el texto original.
+La consulta anónima funciona sin Cognito ni IA. Compose desactiva la red de la API con `NETWORK_CHECKS=false`; ejecutar la API fuera de Compose activa la red por defecto, salvo en pruebas. Las variables se documentan en [.env.example](.env.example) y [api/.env.example](api/.env.example).
 
-## Comprobaciones
+## Pruebas
+
+La suite actual tiene **109 pruebas Phoenix y 2 pruebas de la web**. Los casos del motor anterior se retiraron; las reglas de producción se prueban en Phoenix. La evaluación sintética de 24 casos es parte de esa suite, no una medida de precisión real ni de calidad del modelo.
 
 ```bash
-npm run check
-npm test
+npm run check && npm test
 
-docker compose -f compose.dev.yml exec -e MIX_ENV=test api-dev mix ecto.setup
+docker compose -f compose.dev.yml exec -e MIX_ENV=test api-dev mix deps.get --check-locked
+docker compose -f compose.dev.yml exec -e MIX_ENV=test api-dev mix format --check-formatted
+docker compose -f compose.dev.yml exec -e MIX_ENV=test api-dev mix compile --warnings-as-errors
+docker compose -f compose.dev.yml exec -e MIX_ENV=test api-dev mix ecto.create
+docker compose -f compose.dev.yml exec -e MIX_ENV=test api-dev mix ecto.migrate
 docker compose -f compose.dev.yml exec -e MIX_ENV=test api-dev mix test
 ```
 
-Las 43 regresiones TypeScript conservan el motor anterior como referencia. Phoenix añade pruebas de reglas, redirects restringidos, JWT, cuotas concurrentes, aislamiento, borrado e ingesta. No dependen de red externa.
+[CI](https://github.com/deep-skill/everyday-trust/actions/workflows/ci.yml) ejecuta tipos, build, pruebas web, formato, compilación y pruebas Phoenix. Las [pruebas de navegador](tests/e2e/run.py) usan una base separada e identidad simulada; su ejecución completa no forma parte de cada CI. [Método e informe de evaluación](docs/architecture/evaluation.md).
 
-La prueba completa de navegador requiere Python con Playwright y Google Chrome Dev, y puertos 4000/4173 libres. Usa una base E2E separada y claves efímeras, fuerza renovación/rotación de sesión y no llama a Cognito real:
+## Límites conocidos
 
-```bash
-python3 tests/e2e/run.py
-```
+La revisión orienta; no autentica al remitente ni garantiza seguridad. El feed disponible es histórico. No se analiza HTML, no se ejecuta JavaScript y no se inspecciona la ruta concreta de un enlace arbitrario. Las comprobaciones externas y la IA pueden fallar; la cobertura lo indica.
 
-Se puede indicar el Python con Playwright instalado mediante E2E_PYTHON. Los helpers de identidad de prueba están excluidos de las imágenes de producción.
+El piloto envía contexto completo a Contributor; antes de difusión general se revisará el proveedor y su tratamiento de datos. Las cuotas limitan llamadas, pero no hay un presupuesto monetario duro verificado en el proveedor. La infraestructura inicial usa un EC2 y RDS Single-AZ; restauración de backups y alta/recuperación con correo real siguen pendientes de prueba. Capturas, QR, extensión y apps son roadmap.
 
-## Configuración de producción
+[Seguridad y reporte de vulnerabilidades](SECURITY.md) · [Controles y límites](docs/architecture/security-review.md) · [Documentación de producto, UX y arquitectura](docs/README.md)
 
-Web: API_BASE_URL, API_SERVICE_TOKEN, WEB_DATABASE_URL, DATABASE_CA_FILE, COGNITO_ISSUER/CLIENT_ID/DOMAIN y SESSION_ENCRYPTION_KEY de 32 bytes en base64. La imagen de producción exige COGNITO_CLIENT_SECRET y ORIGIN HTTPS. API: DATABASE_URL, DATABASE_CA_FILE, SECRET_KEY_BASE, API_SERVICE_TOKEN y los mismos issuer/client id. Contributor requiere AI_PROVIDER=meta, AI_DATA_APPROVED=true, AI_INPUT_MODE=full_context y MODEL_API_KEY; el piloto envía el mensaje y las preguntas completos, junto con la evidencia disponible. Ver plantillas de entorno y [decisiones implementadas](docs/architecture/implementation.md).
-
-Las URLs PostgreSQL no incluyen opciones SSL: se configura una CA explícita con verificación de hostname. Las credenciales de migración se separan de los roles de ejecución; el BFF sólo accede al esquema de sesiones. Ningún secreto entra en las imágenes.
-
-Producción usa RDS privado y EC2/Docker/Nginx/Cloudflare Tunnel según el [diagrama AWS](docs/diagrams/rendered/structurizr-AwsDeployment.svg). Compose, Nginx, roles y script operativo se centralizan en `../devops-agents/everyday-trust/`; recursos, permisos y evidencia en el runbook de ese repositorio. Los workflows públicos ejecutan CI y permiten publicar imágenes GHCR por SHA; el CD usa OIDC/SSM y un token GHCR efímero, sin llaves AWS persistentes ni SSH.
-
-## Documentación
-
-[Negocio, VSM, UX, arquitectura y datos](docs/README.md), [implementación](docs/architecture/implementation.md), [fuentes e ingesta](docs/architecture/source-ingestion.md) e [identidad visual](docs/design/brand.md). Fuentes editables de diagramas en PlantUML y [Structurizr DSL](docs/architecture/workspace.dsl).
-
-Las consultas no autentican al remitente ni garantizan seguridad. El corte local resuelve acortadores permitidos y comprueba la raíz de los sitios mediante HEAD, con DNS/IP públicos fijados y redirecciones limitadas. Omite rutas y parámetros del destino, no analiza HTML ni ejecuta JavaScript; una dependencia fallida o una fuente histórica no habilitan un resultado verde. El endpoint anterior POST /api/analyze está retirado y devuelve 410; el flujo actual usa /api/v1/cases.
-
-La API también publica métricas agregadas en `/api/v1/stats`, separando ejemplos de consultas. Ver [estado de implementación](docs/architecture/implementation.md).
-
-
-## Tracción, reseñas y presentación
-
-La web muestra visitas aproximadas, consultas completadas y valoración agregada de forma discreta. Los ejemplos no se mezclan con consultas ni reseñas del producto; las cifras no prueban personas únicas ni fraudes evitados. Una consulta completada permite una valoración y un comentario privado opcional, fuera de la IA y con retención de30 días. [Controles de seguridad y límites](docs/architecture/security-review.md).
-
-[Presentación pública de cinco slides](https://verifica.deepskill.space/presentacion/), con fuente HTML en [docs/presentation](docs/presentation/README.md), diagrama SVG con símbolos AWS y notas para tres minutos. La entrega del evento referencia esa URL. [Evaluación sintética reproducible](docs/architecture/evaluation-report.json):24 casos offline,0 verdes peligrosos,0 falsas alarmas y6 abstenciones; no estima precisión real ni calidad del modelo. CI del código con la evaluación:109 pruebas Phoenix y45 Node.
+Proyecto de Deep Skill para Hack the Andes 2026, track Seguridad.

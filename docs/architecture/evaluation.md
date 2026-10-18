@@ -1,12 +1,12 @@
 # Evaluación de señales e interpretación
 
-Estado: plan de evaluación, sin corpus completo, ejecutor nuevo ni métricas de calidad producidas todavía. Las regresiones existentes del prototipo son un punto de partida técnico; no equivalen a medir precisión en usuarios peruanos.
+Estado al 18-oct-2026: corpus de 24 fixtures sintéticos y ejecutor ExUnit incluidos en CI, con informe versionado. Se evalúan reglas offline; calidad del modelo, precisión en usuarios reales, latencia externa y costos siguen pendientes.
 
 ## Conjunto y etiquetas
 
-Primera meta propuesta: 50 a 100 casos. Incluir mensajes legítimos, fraude sustentado y casos insuficientes para concluir; bancos y billeteras, texto sin enlaces, dominios similares, números, lenguaje local, negaciones y mensajes con instrucciones dirigidas al modelo. Un conjunto pequeño orienta decisiones, sin representar la prevalencia nacional.
+Próxima ampliación propuesta: pasar de los 24 fixtures actuales a un conjunto de 50 a 100 casos. Incluir mensajes legítimos, fraude sustentado y casos insuficientes para concluir; bancos y billeteras, texto sin enlaces, dominios similares, números, lenguaje local, negaciones y mensajes con instrucciones dirigidas al modelo. Un conjunto pequeño orienta decisiones, sin representar la prevalencia nacional.
 
-Cubrir los patrones del [catálogo de interpretación](ai-interpretation.md#catálogo-de-patrones) en la medida del alcance aprobado, con contrapartes legítimas y ambiguas. Para sospechas sólo de texto, comprobar que el modelo puede advertir hasta `suspicious`, identifica la interpretación como tal y no inventa señales para alcanzar `high_risk`. Una política de marca se prueba con pedidos reales de datos y con negaciones, citas o consejos educativos que no deben dispararla.
+Cubrir los patrones del [catálogo de interpretación](ai-interpretation.md#salida-efectiva-y-política) en la medida del alcance aprobado, con contrapartes legítimas y ambiguas. Para sospechas sólo de texto, comprobar que el modelo puede advertir hasta `suspicious`, identifica la interpretación como tal y no inventa señales para alcanzar `high_risk`. Una política de marca se prueba con pedidos reales de datos y con negaciones, citas o consejos educativos que no deben dispararla.
 
 Usar preferentemente ejemplos sintéticos inspirados en patrones documentados y referencias a alertas oficiales. Publicar sólo material con permiso y derechos revisados. Mensajes donados requieren consentimiento y anonimización antes de incorporarlos; no se necesita recolectarlos para completar el primer corte. No subir originales ni secretos a CI o a otro proveedor.
 
@@ -14,17 +14,17 @@ Cada caso tendrá `id`, origen y permiso, familia de patrón, texto sintético o
 
 Separar casos usados para ajustar reglas o instrucciones de un conjunto final reservado. Agrupar variantes de la misma plantilla o campaña para que no queden casi duplicadas a ambos lados. Fijar corpus y snapshots antes de comparar modelos; registrar cantidad de casos por clase y desacuerdos de etiquetado. Mientras JP trabaje solo, declarar la falta de un segundo etiquetador independiente.
 
-## Ejecutor propuesto
+## Ejecutor actual y ampliación pendiente
 
 El evaluador es una herramienta fuera del tráfico del usuario, ejecutada localmente o en CI sobre un entorno de prueba. Nunca genera tracción de usuarios ni accede a historiales de producción.
 
 1. Cargar fixtures versionados y snapshots fijos; ejecutar reglas sin red para resultados reproducibles.
-2. Comprobar extracción, procedencia, veredicto, cobertura y acciones esperadas. Conservar las regresiones del prototipo como requisito de paridad.
+2. Comprobar extracción, procedencia, veredicto, cobertura y acciones esperadas. Las regresiones de reglas se mantienen en Phoenix; el motor TypeScript del prototipo se retiró.
 3. Ejecutar pruebas del adaptador con respuestas simuladas: JSON inválido, señales inventadas, timeout, petición de secretos e intento de rebajar el piso de riesgo.
 4. Comparar modelos reales en una corrida explícita con presupuesto, corpus permitido y proveedor habilitado. No hacer llamadas pagadas en cada PR ni desde contribuciones no confiables.
 5. Generar un informe por commit, corpus, snapshot, política, instrucciones y modelo, sin mensajes de producción ni credenciales.
 
-Las pruebas de CI de reglas y contrato serán requisitos antes de integrar cambios. Las comprobaciones de fuentes vivas son pruebas separadas: su resultado puede cambiar y no sustituye la evaluación reproducible.
+Las pruebas de CI de reglas y contrato son requisitos antes de integrar cambios. Las comprobaciones de fuentes vivas son pruebas separadas: su resultado puede cambiar y no sustituye la evaluación reproducible.
 
 ## Métricas
 
@@ -52,8 +52,8 @@ La evaluación mínima de esos invariantes acompaña al primer corte P0. El info
 Los umbrales de calidad, latencia y costo se fijan después de la primera medición, antes de elegir modelo y publicar afirmaciones. Presentar el informe completo y sus límites; el número de pruebas aprobadas no equivale al número de usuarios ni a fraudes evitados.
 
 
-## Corte reproducible del18-oct
+## Resultado reproducible del 18-oct
 
-Se ejecutaron24 fixtures sintéticos en CI, con reglas y red desactivada, sin usar el modelo ni el feed. Hubo0 resultados verdes en los casos etiquetados riesgosos,0 falsas alarmas en los legítimos y6 abstenciones. Las abstenciones se conservan como categoría propia, no como aciertos. Son ejemplos de regresión escritos por el equipo, no un conjunto reservado ni una estimación de precisión en mensajes reales. Tampoco miden calidad del LLM, latencia externa o eficacia de prevención.
+Se ejecutaron 24 fixtures sintéticos en CI, con reglas activas y red desactivada, sin usar el modelo ni el feed. Hubo 0 resultados verdes en los casos etiquetados riesgosos, 0 falsas alarmas en los legítimos y 6 abstenciones. Las abstenciones se conservan como categoría propia, no como aciertos. Son ejemplos de regresión escritos por el equipo, no un conjunto reservado ni una estimación de precisión en mensajes reales. Tampoco miden calidad del LLM, latencia externa o eficacia de prevención.
 
-Corpus: `api/test/fixtures/evaluation.json`; ejecutor: `api/test/evaluation_test.exs`, incluido en `mix test`. [Resultado completo](evaluation-report.json). [Ejecución CI](https://github.com/deep-skill/everyday-trust/actions/runs/39102714048),109 pruebas de API y45 Node. El corte de aplicación3afb181 tenía108 pruebas de API; la prueba adicional sólo añade evaluación, sin modificar el código de producción.
+Corpus: `api/test/fixtures/evaluation.json`; ejecutor: `api/test/evaluation_test.exs`, incluido en `mix test`. [Resultado completo](evaluation-report.json). [Ejecución CI](https://github.com/deep-skill/everyday-trust/actions/runs/39102714048). El ejecutor es parte de la suite Phoenix; no llama al modelo ni modifica código de producción.

@@ -1,6 +1,6 @@
 # Negocio y alcance del verificador de mensajes
 
-Estado: borrador para revisión de JP, 17 de octubre de 2026. Nombre de trabajo: ¿Es estafa?
+Estado al 18-oct-2026: alcance del piloto web ¿Es estafa?, proyecto Everyday Trust. La implementación y las hipótesis de negocio se distinguen en sus apartados.
 
 El producto ayuda a personas en Perú a evaluar mensajes sospechosos y decidir su siguiente acción. El primer segmento son clientes de bancos y billeteras que reciben SMS o WhatsApp que aparentan venir de su entidad. La consulta funciona sin registro; una cuenta gratuita añade historial privado, continuidad de casos y una cuota mayor.
 
@@ -42,7 +42,7 @@ La cuenta no exige indicar banco, DNI, teléfono, datos de tarjeta ni credencial
 | B04 | Cuenta gratuita | Registro, acceso, salida y recuperación tienen un flujo documentado y mensajes claros |
 | B05 | Historial voluntario | Guardar requiere una acción explícita; la persona ve y borra sus propios casos |
 | B06 | Más uso con cuenta | La cuota se aplica en servidor y se explica antes de bloquear; los valores siguen pendientes de validación |
-| B07 | Privacidad | Se minimizan datos antes de enviar al modelo o conservar contexto; el historial guarda sólo resumen saneado y evidencias, sin mensaje original, números ni rutas de enlaces |
+| B07 | Privacidad | El piloto envía mensaje completo y evidencia a Contributor; no persiste el original ni lo registra en logs. El historial guarda sólo resumen saneado y evidencias, sin números ni rutas de enlaces |
 | B08 | Uso demostrable | Eventos sin contenido distinguen análisis completados, errores y retorno; feedback opcional mide utilidad percibida, sin asumir que prueba acierto |
 
 Texto y enlaces son el primer formato. Se propone conservar la extracción de números que ya existe dentro del texto, con sus límites: prefijo o país no identifican titular ni demuestran fraude. El formulario dedicado a números y la comparación de remitentes con un catálogo verificado requieren validar alcance; no se presentan como funciones ya completas.
@@ -57,11 +57,11 @@ El resultado distingue alto riesgo, sospechoso, sin señales detectadas e indete
 
 La IA puede advertir hasta sospechoso al interpretar un texto sin enlaces ni señales de reglas. Esa advertencia se identifica como interpretación; alto riesgo exige sustento adicional. Los patrones del catálogo, como un supuesto familiar con número nuevo o una transferencia por error, orientan la ayuda sin convertirse en hechos probados ni ampliar automáticamente el primer segmento.
 
-El original se usa durante la petición para extraer señales; el contexto y los turnos conservados temporalmente pasan por minimización. Guardar un caso conserva el resultado, el resumen saneado, las evidencias permitidas y la versión de análisis. Retomar recupera ese resumen; si hace falta el mensaje original, la persona lo vuelve a proporcionar. Guardar conversaciones completas sería una decisión futura separada.
+El original se usa para extraer señales y se envía completo a Contributor durante el piloto, junto con el análisis. Las preguntas se envían completas con el resultado disponible. El original no se persiste; el contexto conservado temporalmente y el historial se restringen a campos permitidos. Guardar un caso conserva el resultado, el resumen saneado, las evidencias permitidas y la versión de análisis. Retomar recupera ese resumen; si hace falta el mensaje original, la persona lo vuelve a proporcionar. Guardar conversaciones completas sería una decisión futura separada.
 
 Un fallo del proveedor de IA mantiene disponible el análisis por señales y comunica la cobertura limitada. La interpretación del modelo no puede convertir en seguro un resultado con evidencia verificable de alto riesgo.
 
-La entrada advierte que se omitan datos personales. La detección automática de posibles DNI, tarjetas o códigos no garantiza eliminarlos todos; debe permitir corregir la entrada y reducir el contexto enviado. Antes de integrar IA se verifican conservación, entrenamiento y subprocesadores del proveedor. No se publica una promesa de «sin entrenamiento» sin respaldo contractual y configuración comprobada.
+La entrada pide omitir datos personales. Durante el piloto no hay minimización del mensaje antes de enviarlo al modelo y el proveedor lo procesa según sus condiciones. Antes de difusión general se revisarán modelo, conservación, entrenamiento y subprocesadores. No se publica una promesa de «sin entrenamiento» sin respaldo contractual y configuración comprobada.
 
 ## Modelo de ingresos por validar
 
