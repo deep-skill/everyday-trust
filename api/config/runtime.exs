@@ -33,9 +33,12 @@ if config_env() == :prod do
 end
 
 config :everyday_trust,
-  report_actions_enabled: config_env() != :test && System.get_env("REPORT_ACTIONS_ENABLED", "false") == "true",
-  image_input_enabled: config_env() != :test && System.get_env("IMAGE_INPUT_ENABLED", "false") == "true",
-  community_reports_enabled: config_env() != :test && System.get_env("COMMUNITY_REPORTS_ENABLED", "false") == "true",
+  report_actions_enabled:
+    config_env() != :test && System.get_env("REPORT_ACTIONS_ENABLED", "false") == "true",
+  image_input_enabled:
+    config_env() != :test && System.get_env("IMAGE_INPUT_ENABLED", "false") == "true",
+  community_reports_enabled:
+    config_env() != :test && System.get_env("COMMUNITY_REPORTS_ENABLED", "false") == "true",
   safe_browsing_enabled:
     config_env() != :test && System.get_env("SAFE_BROWSING_ENABLED", "false") == "true",
   safe_browsing_api_key: System.get_env("GOOGLE_SAFE_BROWSING_API_KEY"),

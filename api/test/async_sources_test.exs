@@ -4,12 +4,23 @@ defmodule EverydayTrust.AsyncSourcesTest do
 
   test "navigation evidence cannot erase a stronger primary verdict or other source data" do
     base = Analysis.run("Revisa este mensaje")
-    primary = base
-      |> Map.merge(%{"verdict" => "high_risk", "summary" => "Google advierte riesgo", "risk_origin" => "external_signal", "rules_score" => 45, "report_data" => %{"bank" => "synthetic"}, "scam_type" => "bank_impersonation"})
+
+    primary =
+      base
+      |> Map.merge(%{
+        "verdict" => "high_risk",
+        "summary" => "Google advierte riesgo",
+        "risk_origin" => "external_signal",
+        "rules_score" => 45,
+        "report_data" => %{"bank" => "synthetic"},
+        "scam_type" => "bank_impersonation"
+      })
       |> Map.put("signals", [%{"id" => "google_safe_browsing", "severity" => "high"}])
       |> put_in(["coverage", "safe_browsing"], "completed")
       |> put_in(["coverage", "ai"], "completed")
-    scanned = base
+
+    scanned =
+      base
       |> Map.put("url_scans", [%{"status" => "no_match"}])
       |> put_in(["coverage", "urlscan"], "completed")
 
@@ -27,12 +38,23 @@ defmodule EverydayTrust.AsyncSourcesTest do
 
   test "malicious navigation raises the verdict while retaining interpretation and all evidence" do
     base = Analysis.run("Revisa este mensaje")
-    primary = base
+
+    primary =
+      base
       |> Map.merge(%{"verdict" => "suspicious", "scam_type" => "credential_theft"})
       |> put_in(["coverage", "ai"], "completed")
+
     signal = %{"id" => "urlscan_malicious", "severity" => "high"}
-    scanned = base
-      |> Map.merge(%{"verdict" => "high_risk", "summary" => "Indicios externos", "risk_origin" => "external_signal", "rules_score" => 45, "signals" => [signal]})
+
+    scanned =
+      base
+      |> Map.merge(%{
+        "verdict" => "high_risk",
+        "summary" => "Indicios externos",
+        "risk_origin" => "external_signal",
+        "rules_score" => 45,
+        "signals" => [signal]
+      })
       |> put_in(["coverage", "urlscan"], "completed")
 
     merged = AsyncSources.merge(primary, scanned, base)
@@ -44,7 +66,8 @@ defmodule EverydayTrust.AsyncSourcesTest do
   end
 
   test "expired background work marks all pending sources unavailable" do
-    base = Analysis.run("Revisa este mensaje")
+    base =
+      Analysis.run("Revisa este mensaje")
       |> put_in(["coverage", "ai"], "pending")
       |> put_in(["coverage", "safe_browsing"], "pending")
       |> put_in(["coverage", "urlscan"], "pending")

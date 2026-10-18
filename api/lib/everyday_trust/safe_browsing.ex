@@ -46,7 +46,10 @@ defmodule EverydayTrust.SafeBrowsing do
       result
     else
       result
-      |> Map.update!("signals", &Enum.uniq_by(&1 ++ checked.signals, fn signal -> signal["id"] end))
+      |> Map.update!(
+        "signals",
+        &Enum.uniq_by(&1 ++ checked.signals, fn signal -> signal["id"] end)
+      )
       |> Map.put("verdict", "high_risk")
       |> Map.put("risk_origin", "external_signal")
       |> Map.put(
@@ -218,7 +221,9 @@ defmodule EverydayTrust.SafeBrowsing do
   end
 
   defp path_matches?(requested, threat),
-    do: requested == threat or (String.ends_with?(threat, "/") and String.starts_with?(requested, threat))
+    do:
+      requested == threat or
+        (String.ends_with?(threat, "/") and String.starts_with?(requested, threat))
 
   defp duration_seconds(value) when is_binary(value) do
     case Regex.run(~r/^(\d+)(?:\.\d{1,9})?s$/, value) do

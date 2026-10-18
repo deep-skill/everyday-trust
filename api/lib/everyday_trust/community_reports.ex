@@ -13,7 +13,16 @@ end
 
 defmodule EverydayTrust.Community do
   import Ecto.Query
-  alias EverydayTrust.{Cases, CommunityReport, Domain, Repo, Signals, ThreatIndicator, ThreatVersion}
+
+  alias EverydayTrust.{
+    Cases,
+    CommunityReport,
+    Domain,
+    Repo,
+    Signals,
+    ThreatIndicator,
+    ThreatVersion
+  }
 
   @catalog_path Path.expand("../../priv/catalog/brands.json", __DIR__)
   @external_resource @catalog_path
@@ -21,10 +30,12 @@ defmodule EverydayTrust.Community do
   @digest :crypto.hash(:sha256, "community-v1") |> Base.encode16(case: :lower)
   @domain ~r/\A(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\z/
 
-  def enabled?, do: Application.get_env(:everyday_trust, :community_reports_enabled, false) == true
+  def enabled?,
+    do: Application.get_env(:everyday_trust, :community_reports_enabled, false) == true
 
   def eligible_domain(result) do
-    if enabled?() and result["analysis_status"] == "completed" and result["verdict"] in ["suspicious", "high_risk"] do
+    if enabled?() and result["analysis_status"] == "completed" and
+         result["verdict"] in ["suspicious", "high_risk"] do
       result
       |> Map.get("domains", [])
       |> Enum.find_value(fn finding ->
@@ -36,9 +47,15 @@ defmodule EverydayTrust.Community do
 
   def submit(id, session, owner, network, consent) do
     cond do
-      not enabled?() -> {:error, 404, "feature_disabled"}
-      consent != true -> {:error, 400, "consent_required"}
-      not is_binary(session) or byte_size(session) == 0 -> {:error, 400, "invalid_session"}
+      not enabled?() ->
+        {:error, 404, "feature_disabled"}
+
+      consent != true ->
+        {:error, 400, "consent_required"}
+
+      not is_binary(session) or byte_size(session) == 0 ->
+        {:error, 400, "invalid_session"}
+
       true ->
         with {:ok, item} <- Cases.get(id, session, owner) do
           cond do
@@ -53,30 +70,45 @@ defmodule EverydayTrust.Community do
 
   def enrich(result) do
     if enabled?() do
-      domains = result |> Map.get("domains", []) |> Enum.map(& &1["domain"]) |> Enum.filter(&valid_domain?/1) |> Enum.uniq()
+      domains =
+        result
+        |> Map.get("domains", [])
+        |> Enum.map(& &1["domain"])
+        |> Enum.filter(&valid_domain?/1)
+        |> Enum.uniq()
+
       matched = candidates(domains)
       now = DateTime.utc_now() |> DateTime.to_iso8601()
-      signals = for domain <- matched do
-        %{
-          "id" => "community_reported",
-          "severity" => "medium",
-          "message" => "Este dominio fue reportado por varias sesiones de la comunidad y requiere revisión. Los reportes no prueban por sí solos una estafa.",
-          "source" => "comunidad",
-          "domain" => domain,
-          "checked_at" => now
-        }
-      end
+
+      signals =
+        for domain <- matched do
+          %{
+            "id" => "community_reported",
+            "severity" => "medium",
+            "message" =>
+              "Este dominio fue reportado por varias sesiones de la comunidad y requiere revisión. Los reportes no prueban por sí solos una estafa.",
+            "source" => "comunidad",
+            "domain" => domain,
+            "checked_at" => now
+          }
+        end
 
       result =
         result
-        |> Map.update!("signals", &Enum.uniq_by(&1 ++ signals, fn signal -> {signal["id"], signal["domain"]} end))
+        |> Map.update!(
+          "signals",
+          &Enum.uniq_by(&1 ++ signals, fn signal -> {signal["id"], signal["domain"]} end)
+        )
         |> put_in(["coverage", "community"], "completed")
 
       result =
         if signals != [] and result["verdict"] in ["inconclusive", "no_signals_detected"] do
           result
           |> Map.put("verdict", "suspicious")
-          |> Map.put("summary", "Hay reportes de la comunidad sobre este dominio. Confirma por un canal oficial antes de actuar.")
+          |> Map.put(
+            "summary",
+            "Hay reportes de la comunidad sobre este dominio. Confirma por un canal oficial antes de actuar."
+          )
           |> Map.put("risk_origin", "external_signal")
           |> Map.update!("rules_score", &min(100, &1 + 15))
         else
@@ -88,7 +120,10 @@ defmodule EverydayTrust.Community do
       result
     end
   rescue
-    _ -> result |> put_in(["coverage", "community"], "unavailable") |> Map.put("community_domain", nil)
+    _ ->
+      result
+      |> put_in(["coverage", "community"], "unavailable")
+      |> Map.put("community_domain", nil)
   end
 
   def radar do
@@ -97,22 +132,33 @@ defmodule EverydayTrust.Community do
       from = DateTime.add(now, -7 * 86_400)
       cutoff = DateTime.add(now, -30 * 86_400)
 
-      rows = Repo.all(from r in CommunityReport,
-        join: i in ThreatIndicator, on: i.host == r.domain and i.status == "candidate",
-        join: v in ThreatVersion, on: v.id == i.version_id and v.digest == @digest,
-        where: r.reported_at >= ^cutoff,
-        group_by: r.domain,
-        having: count(r.session_hash) >= 3 and min(r.reported_at) >= ^from,
-        select: {r.domain, max(r.brand)}
-      )
+      rows =
+        Repo.all(
+          from r in CommunityReport,
+            join: i in ThreatIndicator,
+            on: i.host == r.domain and i.status == "candidate",
+            join: v in ThreatVersion,
+            on: v.id == i.version_id and v.digest == @digest,
+            where: r.reported_at >= ^cutoff,
+            group_by: r.domain,
+            having: count(r.session_hash) >= 3 and min(r.reported_at) >= ^from,
+            select: {r.domain, max(r.brand)}
+        )
 
-      brands = rows
+      brands =
+        rows
         |> Enum.frequencies_by(fn {_, brand} -> brand || "Sin marca identificada" end)
         |> Enum.map(fn {brand, count} -> %{brand: brand, domains: count} end)
         |> Enum.sort_by(fn item -> {-item.domains, item.brand} end)
         |> Enum.take(10)
 
-      {:ok, %{new_domains: length(rows), brands: brands, from: DateTime.to_iso8601(from), to: DateTime.to_iso8601(now)}}
+      {:ok,
+       %{
+         new_domains: length(rows),
+         brands: brands,
+         from: DateTime.to_iso8601(from),
+         to: DateTime.to_iso8601(now)
+       }}
     else
       {:error, 404, "feature_disabled"}
     end
@@ -121,9 +167,7 @@ defmodule EverydayTrust.Community do
   def cleanup do
     cutoff = DateTime.add(DateTime.utc_now(), -30 * 86_400)
     Repo.delete_all(from r in CommunityReport, where: r.reported_at < ^cutoff)
-    recent = from r in CommunityReport, where: r.reported_at >= ^cutoff, group_by: r.domain, having: count(r.session_hash) >= 3, select: r.domain
-    versions = from v in ThreatVersion, where: v.digest == @digest, select: v.id
-    Repo.delete_all(from i in ThreatIndicator, where: i.version_id in subquery(versions) and i.host not in subquery(recent))
+    Repo.query!("SELECT public.cleanup_community_candidates()")
     :ok
   end
 
@@ -151,7 +195,7 @@ defmodule EverydayTrust.Community do
                do: Repo.rollback(:quota)
 
         reports = Repo.aggregate(from(r in CommunityReport, where: r.domain == ^domain), :count)
-        if reports >= 3 and independent?(domain, result), do: promote(domain, now)
+        if reports >= 3 and independent?(domain, result), do: promote(domain)
       end
 
       %{recorded: true}
@@ -167,7 +211,7 @@ defmodule EverydayTrust.Community do
     local = Signals.url("https://" <> domain, false)
     lookalike = Enum.any?(local["signals"], &(&1["id"] == "brand_lookalike"))
     signals = Map.get(result, "signals", [])
-    google = Enum.any?(signals, &(&1["id"] == "google_safe_browsing" and &1["domain"] == domain and fresh?(&1["checked_at"])))
+    google = Enum.any?(signals, &(&1["id"] == "google_safe_browsing" and &1["domain"] == domain and fresh?(&1["checked_at"], 1_800)))
     single = case result["domains"] do
       [%{"domain" => ^domain, "age_status" => "match"}] -> true
       _ -> false
@@ -180,22 +224,18 @@ defmodule EverydayTrust.Community do
     lookalike or google or young or scanned
   end
 
-  defp fresh?(value) when is_binary(value) do
+  defp fresh?(value, maximum_age \\ 86_400)
+
+  defp fresh?(value, maximum_age) when is_binary(value) do
     case DateTime.from_iso8601(value) do
-      {:ok, time, _} -> DateTime.diff(DateTime.utc_now(), time) in -60..86_400
+      {:ok, time, _} -> DateTime.diff(DateTime.utc_now(), time) in -60..maximum_age
       _ -> false
     end
   end
 
-  defp fresh?(_), do: false
+  defp fresh?(_, _), do: false
 
-  defp promote(domain, now) do
-    version = Repo.one(from v in ThreatVersion, where: v.digest == @digest)
-    version = version || Repo.insert!(%ThreatVersion{digest: @digest, active: false, record_count: 0, fetched_at: now, published_at: now})
-    Repo.insert_all(ThreatIndicator, [%{version_id: version.id, host: domain, status: "candidate"}], on_conflict: :nothing, conflict_target: [:version_id, :host])
-    count = Repo.aggregate(from(i in ThreatIndicator, where: i.version_id == ^version.id), :count)
-    Repo.update!(Ecto.Changeset.change(version, record_count: count, fetched_at: now))
-  end
+  defp promote(domain), do: Repo.query!("SELECT public.promote_community_candidate($1)", [domain])
 
   defp candidates([]), do: []
   defp candidates(domains) do
@@ -215,13 +255,22 @@ defmodule EverydayTrust.Community do
       not Signals.ip?(domain) and Domain.registrable_domain(domain) == domain and
       is_nil(Signals.url("https://" <> domain, false)["official_brand"])
   end
+
   defp valid_domain?(_), do: false
 
   defp brand(domain) do
     checks = Signals.url("https://" <> domain, false)
+
     Enum.find_value(@brands, fn entry ->
       name = entry["name"]
-      if Enum.any?(checks["signals"], &(&1["id"] == "brand_lookalike" and &1["message"] == "El enlace menciona a #{name}, pero no pertenece a su dominio oficial.")), do: name
+
+      if Enum.any?(
+           checks["signals"],
+           &(&1["id"] == "brand_lookalike" and
+               &1["message"] ==
+                 "El enlace menciona a #{name}, pero no pertenece a su dominio oficial.")
+         ),
+         do: name
     end)
   end
 end

@@ -66,7 +66,7 @@ Actions ejecuta checks y publica imágenes amd64 por digest en GHCR, con SBOM y 
 
 ## Pruebas y evidencia
 
-La suite vigente contiene 109 pruebas Phoenix y 2 pruebas web de cifrado de sesión. Phoenix cubre reglas, redirecciones, JWT, cuotas concurrentes, aislamiento, borrado, reseñas, métricas e ingesta. CI exige formato, compilación sin advertencias, migraciones y pruebas de API, además de tipos, build y pruebas de la web.
+La suite vigente combina pruebas Phoenix y pruebas web de cifrado de sesión; consultar CI para el total del corte. Phoenix cubre reglas, redirecciones, JWT, cuotas concurrentes, aislamiento, borrado, reseñas, métricas e ingesta. CI exige formato, compilación sin advertencias, migraciones y pruebas de API, además de tipos, build y pruebas de la web.
 
 La evaluación incluida en ExUnit ejecuta 24 fixtures sintéticos offline: 0 verdes peligrosos, 0 falsas alarmas y 6 abstenciones. No mide precisión real ni calidad del modelo. [Método](evaluation.md) e [informe](evaluation-report.json).
 
@@ -84,3 +84,7 @@ La verificación pública del corte desplegado comprobó HTTPS, headers dinámic
 - Comparación de calidad/costo de modelos, proveedor y datos para difusión general pendientes. Capturas, QR, extensión y agentes de PC/celular son roadmap.
 
 El [historial de cortes y verificaciones](../archive/implementation-history.md) se conserva como archivo histórico, separado de este estado actual.
+
+## Integraciones opcionales
+
+Safe Browsing, urlscan, reporte voluntario, capturas y comunidad están implementados detrás de cinco flags apagados por defecto. El contrato, las cuotas y los criterios de activación están en [integraciones del piloto](pilot-integrations.md). La presencia del código no acredita que el proveedor esté activo en producción.

@@ -36,13 +36,19 @@ defmodule EverydayTrustWeb.BodyParserTest do
   test "the disabled image route keeps the original body limit" do
     Application.put_env(:everyday_trust, :image_input_enabled, false)
     body = Jason.encode!(%{image: String.duplicate("A", 40_000)})
-    assert_raise Plug.Parsers.RequestTooLargeError, fn -> parse(:post, "/api/v1/image-cases", body) end
+
+    assert_raise Plug.Parsers.RequestTooLargeError, fn ->
+      parse(:post, "/api/v1/image-cases", body)
+    end
   end
 
   test "even the enabled image route rejects bodies above three MiB" do
     Application.put_env(:everyday_trust, :image_input_enabled, true)
     body = Jason.encode!(%{image: String.duplicate("A", 3_145_728)})
-    assert_raise Plug.Parsers.RequestTooLargeError, fn -> parse(:post, "/api/v1/image-cases", body) end
+
+    assert_raise Plug.Parsers.RequestTooLargeError, fn ->
+      parse(:post, "/api/v1/image-cases", body)
+    end
   end
 
   defp parse(method, path, body) do

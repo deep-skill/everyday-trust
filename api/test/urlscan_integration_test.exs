@@ -9,10 +9,18 @@ defmodule EverydayTrust.UrlscanIntegrationTest do
     Ecto.Adapters.SQL.Sandbox.mode(Repo, {:shared, self()})
 
     keys = [
-      :urlscan_enabled, :urlscan_api_key, :test_urlscan_request,
-      :test_urlscan_wait, :test_urlscan_quota, :safe_browsing_enabled,
-      :safe_browsing_api_key, :test_safe_browsing_request, :ai_provider, :ai_data_approved
+      :urlscan_enabled,
+      :urlscan_api_key,
+      :test_urlscan_request,
+      :test_urlscan_wait,
+      :test_urlscan_quota,
+      :safe_browsing_enabled,
+      :safe_browsing_api_key,
+      :test_safe_browsing_request,
+      :ai_provider,
+      :ai_data_approved
     ]
+
     original = Map.new(keys, &{&1, Application.fetch_env(:everyday_trust, &1)})
     Application.put_env(:everyday_trust, :urlscan_enabled, true)
     Application.put_env(:everyday_trust, :urlscan_api_key, "synthetic-test-key")
@@ -40,29 +48,42 @@ defmodule EverydayTrust.UrlscanIntegrationTest do
 
     Application.put_env(:everyday_trust, :test_safe_browsing_request, fn _, _ ->
       send(parent, :google_completed)
-      {:ok, %{status: 200, body: Jason.encode!(%{
-        "cacheDuration" => "300s",
-        "threats" => [%{"url" => "https://unlisted.example/", "threatTypes" => ["SOCIAL_ENGINEERING"]}]
-      })}}
+
+      {:ok,
+       %{
+         status: 200,
+         body:
+           Jason.encode!(%{
+             "cacheDuration" => "300s",
+             "threats" => [
+               %{"url" => "https://unlisted.example/", "threatTypes" => ["SOCIAL_ENGINEERING"]}
+             ]
+           })
+       }}
     end)
+
     Application.put_env(:everyday_trust, :test_urlscan_wait, fn _ ->
       send(parent, {:scan_waiting, self()})
+
       receive do
         :finish -> :ok
       after
         1_000 -> :ok
       end
     end)
+
     Application.put_env(:everyday_trust, :test_urlscan_request, fn options ->
-      body = if options[:method] == :post do
-        %{"uuid" => uuid, "visibility" => "unlisted"}
-      else
-        %{
-          "task" => %{"visibility" => "unlisted", "time" => "2026-10-18T13:00:00Z"},
-          "page" => %{"url" => "https://landing.example/", "title" => "Página sintética"},
-          "verdicts" => %{"urlscan" => %{"malicious" => true, "brands" => []}}
-        }
-      end
+      body =
+        if options[:method] == :post do
+          %{"uuid" => uuid, "visibility" => "unlisted"}
+        else
+          %{
+            "task" => %{"visibility" => "unlisted", "time" => "2026-10-18T13:00:00Z"},
+            "page" => %{"url" => "https://landing.example/", "title" => "Página sintética"},
+            "verdicts" => %{"urlscan" => %{"malicious" => true, "brands" => []}}
+          }
+        end
+
       {:ok, %{status: 200, body: Jason.encode!(body)}}
     end)
 

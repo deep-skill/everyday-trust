@@ -74,20 +74,28 @@ defmodule EverydayTrust.Cases do
     case reservation do
       :ok ->
         base = Analysis.run(text, feed: true) |> EverydayTrust.Community.enrich()
+
         base =
           if options[:input_kind] == "image",
-            do: base |> Map.put("input_kind", "image") |> put_in(["coverage", "image_extraction"], "completed") |> put_in(["coverage", "ai"], "not_applicable"),
+            do:
+              base
+              |> Map.put("input_kind", "image")
+              |> put_in(["coverage", "image_extraction"], "completed")
+              |> put_in(["coverage", "ai"], "not_applicable"),
             else: base
+
         safe_browsing = EverydayTrust.SafeBrowsing.enabled?()
         urlscan = EverydayTrust.Urlscan.enabled?()
         ai = !options[:skip_ai] && EverydayTrust.Interpreter.enabled?()
         pending = ai || safe_browsing || urlscan
         now = DateTime.utc_now()
-        deadline_seconds = cond do
-          urlscan -> 40
-          safe_browsing -> 10
-          true -> 8
-        end
+
+        deadline_seconds =
+          cond do
+            urlscan -> 40
+            safe_browsing -> 10
+            true -> 8
+          end
 
         base =
           if safe_browsing,
@@ -102,7 +110,10 @@ defmodule EverydayTrust.Cases do
             do:
               base
               |> Map.put("analysis_status", "in_progress")
-              |> put_in(["coverage", "ai"], if(ai, do: "pending", else: Map.get(base["coverage"], "ai", "disabled")))
+              |> put_in(
+                ["coverage", "ai"],
+                if(ai, do: "pending", else: Map.get(base["coverage"], "ai", "disabled"))
+              )
               |> abstain(),
             else: base
 
@@ -129,10 +140,16 @@ defmodule EverydayTrust.Cases do
 
         if pending do
           model_text = EverydayTrust.Interpreter.input_text(text)
-          urls = if safe_browsing || urlscan, do: EverydayTrust.Signals.extract_urls(text), else: []
+
+          urls =
+            if safe_browsing || urlscan, do: EverydayTrust.Signals.extract_urls(text), else: []
 
           case Task.Supervisor.start_child(EverydayTrust.AnalysisTasks, fn ->
-                 enriched = EverydayTrust.AsyncSources.enrich(base, model_text, urls, skip_ai: options[:skip_ai])
+                 enriched =
+                   EverydayTrust.AsyncSources.enrich(base, model_text, urls,
+                     skip_ai: options[:skip_ai]
+                   )
+
                  finish(item.id, enriched)
                end) do
             {:ok, _} -> :ok
@@ -158,21 +175,47 @@ defmodule EverydayTrust.Cases do
     with true <- EverydayTrust.ImageInput.enabled?(),
          true <- is_binary(text) && String.length(text) <= 5_000,
          {:ok, validated} <- EverydayTrust.ImageInput.validate(image),
-         limits <- [{session, owner, "analysis", if(owner, do: 25, else: 5)}, {network, nil, "network", 200}, {"global", nil, "all_analyses", 1000}, {"global", nil, "ai", 200, 1}],
+         limits <- [
+           {session, owner, "analysis", if(owner, do: 25, else: 5)},
+           {network, nil, "network", 200},
+           {"global", nil, "all_analyses", 1000},
+           {"global", nil, "ai", 200, 1}
+         ],
          :ok <- reserve(limits, 2),
          {:ok, extracted} <- EverydayTrust.ImageInput.extract(validated),
          false <- extracted.no_text,
          combined <- String.trim(extracted.text <> "\n" <> text),
          true <- String.length(combined) > 0 && String.length(combined) <= 5_000 do
-      create(combined, session, owner, network: network, demo: options[:demo], quota_reserved: true, skip_ai: true, input_kind: "image")
+      create(combined, session, owner,
+        network: network,
+        demo: options[:demo],
+        quota_reserved: true,
+        skip_ai: true,
+        input_kind: "image"
+      )
     else
-      {:error, :too_large} -> {:error, 413, "image_too_large"}
-      {:error, reason} when reason in [:invalid_image, :dimensions, :metadata] -> {:error, 400, "invalid_image"}
-      {:error, _} -> {:error, 503, "image_unavailable"}
-      :error -> {:error, 429, "quota_exceeded"}
-      true -> {:error, 422, "image_no_text"}
-      false -> if EverydayTrust.ImageInput.enabled?(), do: {:error, 422, "image_no_text"}, else: {:error, 404, "image_disabled"}
-      _ -> {:error, 400, "invalid_image"}
+      {:error, :too_large} ->
+        {:error, 413, "image_too_large"}
+
+      {:error, reason} when reason in [:invalid_image, :dimensions, :metadata] ->
+        {:error, 400, "invalid_image"}
+
+      {:error, _} ->
+        {:error, 503, "image_unavailable"}
+
+      :error ->
+        {:error, 429, "quota_exceeded"}
+
+      true ->
+        {:error, 422, "image_no_text"}
+
+      false ->
+        if EverydayTrust.ImageInput.enabled?(),
+          do: {:error, 422, "image_no_text"},
+          else: {:error, 404, "image_disabled"}
+
+      _ ->
+        {:error, 400, "invalid_image"}
     end
   end
 
@@ -181,6 +224,7 @@ defmodule EverydayTrust.Cases do
            Enum.each(limits, fn
              {s, o, operation, limit} ->
                unless quota(s, o, operation, limit, amount), do: Repo.rollback(:quota)
+
              {s, o, operation, limit, cost} ->
                unless quota(s, o, operation, limit, cost), do: Repo.rollback(:quota)
            end)
@@ -274,7 +318,11 @@ defmodule EverydayTrust.Cases do
       |> Map.merge(%{
         "id" => item.id,
         "expires_at" => DateTime.to_iso8601(item.expires_at),
-        "community_domain" => if(item.kind == "demo", do: nil, else: EverydayTrust.Community.eligible_domain(item.result))
+        "community_domain" =>
+          if(item.kind == "demo",
+            do: nil,
+            else: EverydayTrust.Community.eligible_domain(item.result)
+          )
       })
       |> EverydayTrust.ReportActions.enrich()
 

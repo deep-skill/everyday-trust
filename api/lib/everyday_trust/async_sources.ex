@@ -5,13 +5,17 @@ defmodule EverydayTrust.AsyncSources do
 
   def enrich(base, text, urls, options \\ []) do
     if Urlscan.enabled?() do
-      interpretation = Task.async(fn -> protect(base, fn -> interpret(base, text, urls, options) end) end)
+      interpretation =
+        Task.async(fn -> protect(base, fn -> interpret(base, text, urls, options) end) end)
+
       navigation = Task.async(fn -> protect(base, fn -> Urlscan.enrich(base, urls) end) end)
       completed = Task.yield_many([interpretation, navigation], 31_000)
 
       values =
         Enum.map(completed, fn
-          {_task, {:ok, result}} -> result
+          {_task, {:ok, result}} ->
+            result
+
           {task, _} ->
             Task.shutdown(task, :brutal_kill)
             unavailable(base)
@@ -31,7 +35,9 @@ defmodule EverydayTrust.AsyncSources do
   def merge(primary, scanned, base) do
     additional = Enum.reject(scanned["signals"], &(&1 in base["signals"]))
     higher = Map.fetch!(@rank, scanned["verdict"]) > Map.fetch!(@rank, primary["verdict"])
-    score = min(100, primary["rules_score"] + max(0, scanned["rules_score"] - base["rules_score"]))
+
+    score =
+      min(100, primary["rules_score"] + max(0, scanned["rules_score"] - base["rules_score"]))
 
     primary =
       primary

@@ -103,7 +103,9 @@ defmodule EverydayTrust.ImageCasesTest do
   test "one OCR call is sufficient and neither capture nor extracted private text reaches storage or logs" do
     parent = self()
     image = png_data_url()
-    original = "SYNTHETIC_PRIVATE_PERSON DNI 12345678: https://www.viabcp.com/private?customer=SYNTHETIC_PRIVATE_TOKEN"
+
+    original =
+      "SYNTHETIC_PRIVATE_PERSON DNI 12345678: https://www.viabcp.com/private?customer=SYNTHETIC_PRIVATE_TOKEN"
 
     Application.put_env(:everyday_trust, :test_image_request, fn _, _ ->
       send(parent, :ocr_request)
@@ -188,7 +190,9 @@ defmodule EverydayTrust.ImageCasesTest do
   end
 
   defp chunk(type, payload),
-    do: <<byte_size(payload)::32, type::binary, payload::binary, :erlang.crc32(type <> payload)::32>>
+    do:
+      <<byte_size(payload)::32, type::binary, payload::binary,
+        :erlang.crc32(type <> payload)::32>>
 
   defp response(text, no_text \\ false),
     do:

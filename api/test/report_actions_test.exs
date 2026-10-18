@@ -30,11 +30,13 @@ defmodule EverydayTrust.ReportActionsTest do
     [action] = ReportActions.actions(input)
     assert action["brand"] == "BCP"
     assert action["date"] == "2026-10-18"
+
     assert action["text"] ==
              "Posible sitio sospechoso: bcp-acceso.example\nFecha de revisión (UTC): 2026-10-18\nPosible marca imitada: BCP"
 
     google = Enum.find(action["channels"], &(&1["id"] == "google-phishing-report"))
     assert URI.parse(google["public_value"]).host == "safebrowsing.google.com"
+
     assert URI.decode_query(URI.parse(google["public_value"]).query) == %{
              "url" => "https://bcp-acceso.example/"
            }
@@ -53,7 +55,8 @@ defmodule EverydayTrust.ReportActionsTest do
     end
 
     for verdict <- ["inconclusive", "no_signals_detected"] do
-      assert ReportActions.actions(Map.put(result("bcp-acceso.example"), "verdict", verdict)) == []
+      assert ReportActions.actions(Map.put(result("bcp-acceso.example"), "verdict", verdict)) ==
+               []
     end
   end
 

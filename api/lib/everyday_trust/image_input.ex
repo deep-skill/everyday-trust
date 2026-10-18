@@ -45,11 +45,12 @@ defmodule EverydayTrust.ImageInput do
   defp decode(data_url) do
     case String.split(data_url, ",", parts: 2) do
       [header, encoded] when byte_size(encoded) <= @max_encoded ->
-        mime = %{
-          "data:image/jpeg;base64" => "image/jpeg",
-          "data:image/png;base64" => "image/png",
-          "data:image/webp;base64" => "image/webp"
-        }[header]
+        mime =
+          %{
+            "data:image/jpeg;base64" => "image/jpeg",
+            "data:image/png;base64" => "image/png",
+            "data:image/webp;base64" => "image/webp"
+          }[header]
 
         with true <- is_binary(mime),
              {:ok, binary} <- Base.decode64(encoded),
@@ -73,7 +74,8 @@ defmodule EverydayTrust.ImageInput do
           _ -> {:error, :invalid_image}
         end
 
-      _ -> {:error, :invalid_image}
+      _ ->
+        {:error, :invalid_image}
     end
   end
 
@@ -85,7 +87,8 @@ defmodule EverydayTrust.ImageInput do
           {:ok, {width, height}}
         end
 
-      _ -> {:error, :invalid_image}
+      _ ->
+        {:error, :invalid_image}
     end
   end
 
@@ -139,7 +142,8 @@ defmodule EverydayTrust.ImageInput do
               _ -> {:error, :invalid_image}
             end
 
-          _ -> {:error, :invalid_image}
+          _ ->
+            {:error, :invalid_image}
         end
 
       marker == 0xDA and not is_nil(dimensions) ->
@@ -167,7 +171,12 @@ defmodule EverydayTrust.ImageInput do
   defp webp_chunks(<<>>, dimensions, true, _) when not is_nil(dimensions),
     do: {:ok, dimensions}
 
-  defp webp_chunks(<<type::binary-size(4), length::little-32, rest::binary>>, dimensions, data, count)
+  defp webp_chunks(
+         <<type::binary-size(4), length::little-32, rest::binary>>,
+         dimensions,
+         data,
+         count
+       )
        when count < 1_024 and byte_size(rest) >= length + rem(length, 2) do
     <<payload::binary-size(length), padding::binary-size(rem(length, 2)), tail::binary>> = rest
 
@@ -192,7 +201,11 @@ defmodule EverydayTrust.ImageInput do
       else: {:error, :metadata}
   end
 
-  defp webp_dimensions("VP8 ", <<frame::little-24, 0x9D, 0x01, 0x2A, w::little-16, h::little-16, _::binary>>, current)
+  defp webp_dimensions(
+         "VP8 ",
+         <<frame::little-24, 0x9D, 0x01, 0x2A, w::little-16, h::little-16, _::binary>>,
+         current
+       )
        when band(frame, 1) == 0,
        do: same_dimensions(current, {band(w, 0x3FFF), band(h, 0x3FFF)})
 
@@ -274,12 +287,14 @@ defmodule EverydayTrust.ImageInput do
         else: Req.post(@endpoint, options)
 
     with {:ok,
-          %{status: 200, body: %{"choices" => [%{"message" => %{"content" => content}} | _]}}} <- response,
+          %{status: 200, body: %{"choices" => [%{"message" => %{"content" => content}} | _]}}} <-
+           response,
          true <- is_binary(content) and byte_size(content) <= 32_768,
          {:ok, %{"text" => text, "no_text" => no_text}} <- Jason.decode(content),
          true <- is_binary(text) and String.valid?(text) and String.length(text) <= 5_000,
          true <- is_boolean(no_text),
-         true <- (no_text and String.trim(text) == "") or (not no_text and String.trim(text) != "") do
+         true <-
+           (no_text and String.trim(text) == "") or (not no_text and String.trim(text) != "") do
       {:ok, %{text: String.trim(text), no_text: no_text}}
     else
       _ -> {:error, :invalid_response}

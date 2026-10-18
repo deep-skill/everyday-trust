@@ -1,8 +1,17 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import type { CaseResult } from '$lib/cases';
   import { explainSignals } from '$lib/evidence';
   let { result }: { result: CaseResult } = $props();
-  const reasons = $derived(explainSignals(result));
+  let now = $state(Date.now());
+  const googleCheckedAt = $derived(result.signals.find(signal => signal.id === 'google_safe_browsing')?.checked_at ?? result.analyzed_at);
+  const googleHistorical = $derived(!Number.isFinite(Date.parse(googleCheckedAt)) || now - Date.parse(googleCheckedAt) > 30 * 60 * 1000);
+  const reasons = $derived(explainSignals(result).map(reason => reason.id === 'google_safe_browsing' && googleHistorical ? {
+    ...reason,
+    title: 'Alerta de Google en una revisión anterior',
+    detail: 'Google marcó el enlace como posiblemente peligroso en esa revisión. Han pasado más de 30 minutos; esta alerta histórica no confirma el estado actual del sitio.'
+  } : reason));
+  onMount(() => { const timer = setInterval(() => now = Date.now(), 30_000); return () => clearInterval(timer); });
 </script>
 
 <details class="evidence">
@@ -33,7 +42,8 @@
     {/if}
     {#if result.coverage.safe_browsing && result.coverage.safe_browsing !== 'disabled'}
       <div class="checked-sites"><h2>Comprobación de Google</h2>
-        <p>{result.coverage.safe_browsing === 'completed' ? 'Consulta completada. Que no haya coincidencias no demuestra que el sitio sea seguro.' : result.coverage.safe_browsing === 'pending' ? 'Comprobación en curso.' : 'No pudimos completar esta comprobación.'}</p>
+        <p>{result.coverage.safe_browsing === 'completed' ? googleHistorical ? 'Revisión histórica de Google, realizada hace más de 30 minutos. No confirma el estado actual del sitio.' : 'Consulta completada. Que no haya coincidencias no demuestra que el sitio sea seguro.' : result.coverage.safe_browsing === 'pending' ? 'Comprobación en curso.' : result.coverage.safe_browsing === 'not_applicable' ? 'No había enlaces para esta comprobación.' : 'No pudimos completar esta comprobación.'}</p>
+        {#if result.coverage.safe_browsing === 'completed' && Number.isFinite(Date.parse(googleCheckedAt))}<p>Fecha de esta revisión: {new Date(googleCheckedAt).toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Lima' })}, hora de Perú.</p>{/if}
         <a href="https://developers.google.com/safe-browsing/v4/advisory" target="_blank" rel="noopener noreferrer">Advisory provided by Google</a>
       </div>
     {/if}

@@ -11,23 +11,43 @@ defmodule EverydayTrust.Community.Export do
       recent = DateTime.add(now, -7 * 86_400)
       retained = DateTime.add(now, -30 * 86_400)
 
-      records = Repo.all(from r in CommunityReport,
-        join: i in ThreatIndicator, on: i.host == r.domain and i.status == "candidate",
-        join: v in ThreatVersion, on: v.id == i.version_id and v.digest == @digest,
-        where: r.reported_at >= ^retained,
-        group_by: r.domain,
-        having: count(r.session_hash) >= 3 and max(r.reported_at) >= ^recent,
-        order_by: r.domain,
-        select: {
-          r.domain, max(r.brand),
-          fragment("CASE WHEN bool_or(? = 'high_risk') THEN 'high_risk' ELSE 'suspicious' END", r.verdict),
-          min(r.reported_at), max(r.reported_at), count(r.session_hash)
-        }
-      )
+      records =
+        Repo.all(
+          from r in CommunityReport,
+            join: i in ThreatIndicator,
+            on: i.host == r.domain and i.status == "candidate",
+            join: v in ThreatVersion,
+            on: v.id == i.version_id and v.digest == @digest,
+            where: r.reported_at >= ^retained,
+            group_by: r.domain,
+            having: count(r.session_hash) >= 3 and max(r.reported_at) >= ^recent,
+            order_by: r.domain,
+            select: {
+              r.domain,
+              max(r.brand),
+              fragment(
+                "CASE WHEN bool_or(? = 'high_risk') THEN 'high_risk' ELSE 'suspicious' END",
+                r.verdict
+              ),
+              min(r.reported_at),
+              max(r.reported_at),
+              count(r.session_hash)
+            }
+        )
 
-      rows = Enum.map(records, fn {domain, brand, verdict, first, last, sessions} ->
-        [domain, brand || "", verdict, DateTime.to_iso8601(first), DateTime.to_iso8601(last), to_string(sessions), "comunidad"]
-      end)
+      rows =
+        Enum.map(records, fn {domain, brand, verdict, first, last, sessions} ->
+          [
+            domain,
+            brand || "",
+            verdict,
+            DateTime.to_iso8601(first),
+            DateTime.to_iso8601(last),
+            to_string(sessions),
+            "comunidad"
+          ]
+        end)
+
       {:ok, Enum.map_join([@headers | rows], "\r\n", &line/1) <> "\r\n"}
     else
       {:error, :disabled}

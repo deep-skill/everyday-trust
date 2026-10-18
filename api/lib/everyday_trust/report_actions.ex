@@ -65,7 +65,13 @@ defmodule EverydayTrust.ReportActions do
       "Posible sitio sospechoso: #{domain}\nFecha de revisión (UTC): #{date}" <>
         if(brand, do: "\nPosible marca imitada: #{brand}", else: "")
 
-    %{"domain" => domain, "brand" => brand, "date" => date, "text" => text, "channels" => channels}
+    %{
+      "domain" => domain,
+      "brand" => brand,
+      "date" => date,
+      "text" => text,
+      "channels" => channels
+    }
   end
 
   defp imitated_brand(checks) do

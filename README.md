@@ -56,7 +56,7 @@ La consulta anónima funciona sin Cognito ni IA. Compose desactiva la red de la 
 
 ## Pruebas
 
-La suite actual tiene **109 pruebas Phoenix y 2 pruebas de la web**. Los casos del motor anterior se retiraron; las reglas de producción se prueban en Phoenix. La evaluación sintética de 24 casos es parte de esa suite, no una medida de precisión real ni de calidad del modelo.
+La suite combina pruebas Phoenix y pruebas web de cifrado de sesión; el total vigente se publica en CI. Los casos del motor anterior se retiraron; las reglas de producción se prueban en Phoenix. La evaluación sintética de 24 casos es parte de esa suite, no una medida de precisión real ni de calidad del modelo.
 
 ```bash
 npm run check && npm test
@@ -80,3 +80,5 @@ El piloto envía contexto completo a Contributor; antes de difusión general se 
 [Seguridad y reporte de vulnerabilidades](SECURITY.md) · [Controles y límites](docs/architecture/security-review.md) · [Documentación de producto, UX y arquitectura](docs/README.md)
 
 Proyecto de Deep Skill para Hack the Andes 2026, track Seguridad.
+
+Las integraciones opcionales del piloto y sus límites se describen en [integraciones del piloto](docs/architecture/pilot-integrations.md). Sus cinco flags están apagados por defecto y requieren validación antes de activarse.

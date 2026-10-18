@@ -18,7 +18,10 @@ defmodule EverydayTrust.SourceDisplayTest do
     refute serialized =~ "PRIVATE-TITLE"
     refute serialized =~ "PRIVATE-BRAND"
     refute serialized =~ "PRIVATE-EXTRA"
-    assert [%{"hostname" => "example.com", "final_hostname" => "example.net"}] = sanitized["url_scans"]
+
+    assert [%{"hostname" => "example.com", "final_hostname" => "example.net"}] =
+             sanitized["url_scans"]
+
     assert hd(sanitized["url_scans"])["report_url"] == @report
   end
 
@@ -26,10 +29,17 @@ defmodule EverydayTrust.SourceDisplayTest do
     original = result()
     SourceDisplay.put("case-one", original)
     sanitized = SourceDisplay.sanitize(original)
-    assert hd(SourceDisplay.restore("case-one", sanitized)["url_scans"])["page_title"] == "PRIVATE-TITLE"
+
+    assert hd(SourceDisplay.restore("case-one", sanitized)["url_scans"])["page_title"] ==
+             "PRIVATE-TITLE"
+
     refute hd(SourceDisplay.restore("case-other", sanitized)["url_scans"])["page_title"]
 
-    other = put_in(sanitized, ["url_scans"], [%{"report_url" => "https://urlscan.io/result/22222222-2222-4222-8222-222222222222/"}])
+    other =
+      put_in(sanitized, ["url_scans"], [
+        %{"report_url" => "https://urlscan.io/result/22222222-2222-4222-8222-222222222222/"}
+      ])
+
     refute hd(SourceDisplay.restore("case-one", other)["url_scans"])["page_title"]
   end
 
@@ -38,7 +48,11 @@ defmodule EverydayTrust.SourceDisplayTest do
     assert map_size(:sys.get_state(SourceDisplay)) == 1_000
 
     :sys.replace_state(SourceDisplay, fn _ ->
-      %{"expired" => {System.monotonic_time(:millisecond) - 1, %{@report => %{"page_title" => "PRIVATE-TITLE"}}}}
+      %{
+        "expired" =>
+          {System.monotonic_time(:millisecond) - 1,
+           %{@report => %{"page_title" => "PRIVATE-TITLE"}}}
+      }
     end)
 
     sanitized = SourceDisplay.sanitize(result())

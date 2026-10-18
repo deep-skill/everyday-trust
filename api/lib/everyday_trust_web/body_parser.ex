@@ -12,8 +12,8 @@ defmodule EverydayTrustWeb.BodyParser do
     limit =
       if conn.method == "POST" and conn.path_info == ["api", "v1", "image-cases"] and
            EverydayTrust.ImageInput.enabled?(),
-        do: @image_limit,
-        else: @normal_limit
+         do: @image_limit,
+         else: @normal_limit
 
     Plug.Parsers.call(
       conn,

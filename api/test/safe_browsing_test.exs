@@ -30,9 +30,11 @@ defmodule EverydayTrust.SafeBrowsingTest do
       ],
       "cacheDuration" => "300s"
     })
+
     checked = SafeBrowsing.check(["https://phishing.example/login"])
 
     assert checked.status == "completed"
+
     assert [
              %{
                "severity" => "high",
@@ -41,6 +43,7 @@ defmodule EverydayTrust.SafeBrowsingTest do
                "attribution" => "Advisory provided by Google"
              }
            ] = checked.signals
+
     assert {:ok, _, _} = DateTime.from_iso8601(date)
     assert [%{"status" => "matched"}] = checked.checks
   end
@@ -63,6 +66,7 @@ defmodule EverydayTrust.SafeBrowsingTest do
     result =
       Analysis.run("Comparte tu clave y token ahora")
       |> SafeBrowsing.enrich(["https://phishing.example/"])
+
     assert result["verdict"] == "high_risk"
     assert Enum.any?(result["signals"], &(&1["id"] == "google_safe_browsing"))
   end
@@ -74,7 +78,10 @@ defmodule EverydayTrust.SafeBrowsingTest do
     end)
 
     start = System.monotonic_time(:millisecond)
-    assert %{status: "unavailable", signals: []} = SafeBrowsing.check(["https://timeout.example/"])
+
+    assert %{status: "unavailable", signals: []} =
+             SafeBrowsing.check(["https://timeout.example/"])
+
     assert System.monotonic_time(:millisecond) - start < 2_000
   end
 
@@ -87,6 +94,7 @@ defmodule EverydayTrust.SafeBrowsingTest do
     })
 
     SafeBrowsing.check(["https://cached-danger.example/"])
+
     Application.put_env(:everyday_trust, :test_safe_browsing_request, fn _, _ ->
       Process.sleep(5_000)
       {:error, :timeout}
@@ -101,6 +109,7 @@ defmodule EverydayTrust.SafeBrowsingTest do
     Application.put_env(:everyday_trust, :test_safe_browsing_request, fn _, _ ->
       flunk("unexpected request")
     end)
+
     Application.delete_env(:everyday_trust, :safe_browsing_api_key)
     assert %{status: "unavailable", signals: []} = SafeBrowsing.check(["https://example.com/"])
     Application.put_env(:everyday_trust, :safe_browsing_enabled, false)
@@ -120,7 +129,7 @@ defmodule EverydayTrust.SafeBrowsingTest do
     assert length(checked.checks) == 5
     assert_received {:request, "https://safebrowsing.googleapis.com/v5/urls:search", options}
     sent = options[:params] |> Enum.map(&elem(&1, 1))
-    assert sent == (for n <- 1..5, do: "https://sample#{n}.example/path")
+    assert sent == for(n <- 1..5, do: "https://sample#{n}.example/path")
     refute inspect(options[:params]) =~ "PRIVATE"
     refute inspect(options[:params]) =~ "SECRET"
     refute inspect(checked) =~ "path"
@@ -135,6 +144,7 @@ defmodule EverydayTrust.SafeBrowsingTest do
 
   test "expired cache entries are fetched again" do
     parent = self()
+
     Application.put_env(:everyday_trust, :test_safe_browsing_request, fn _, _ ->
       send(parent, :requested)
       {:ok, %{status: 200, body: Jason.encode!(%{"cacheDuration" => "300s"})}}
@@ -142,6 +152,7 @@ defmodule EverydayTrust.SafeBrowsingTest do
 
     SafeBrowsing.check(["https://cache.example/"])
     assert_received :requested
+
     :sys.replace_state(SafeBrowsing, fn state ->
       Map.new(state, fn {key, {_expires, value}} ->
         {key, {System.monotonic_time(:millisecond) - 1, value}}
@@ -171,10 +182,16 @@ defmodule EverydayTrust.SafeBrowsingTest do
           {:ok, %{status: 429, body: "{}"}},
           {:ok, %{status: 200, body: "not-json"}},
           {:ok, %{status: 200, body: "{}"}},
-          {:ok, %{status: 200, body: Jason.encode!(%{"cacheDuration" => "300s", "threats" => "invalid"})}}
+          {:ok,
+           %{
+             status: 200,
+             body: Jason.encode!(%{"cacheDuration" => "300s", "threats" => "invalid"})
+           }}
         ] do
       Application.put_env(:everyday_trust, :test_safe_browsing_request, fn _, _ -> response end)
-      assert %{status: "unavailable", signals: []} = SafeBrowsing.check(["https://error.example/"])
+
+      assert %{status: "unavailable", signals: []} =
+               SafeBrowsing.check(["https://error.example/"])
     end
   end
 
@@ -198,7 +215,9 @@ defmodule EverydayTrust.SafeBrowsingTest do
       "cacheDuration" => "300s"
     })
 
-    checked = SafeBrowsing.check(["https://danger.example/login", "https://danger.example/login-help"])
+    checked =
+      SafeBrowsing.check(["https://danger.example/login", "https://danger.example/login-help"])
+
     assert Enum.map(checked.checks, & &1["status"]) == ["matched", "no_match"]
   end
 

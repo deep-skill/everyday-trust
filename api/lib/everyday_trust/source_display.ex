@@ -76,7 +76,8 @@ defmodule EverydayTrust.SourceDisplay do
 
     state =
       if map_size(state) >= @limit and not Map.has_key?(state, id),
-        do: Map.delete(state, state |> Enum.min_by(fn {_, {expires, _}} -> expires end) |> elem(0)),
+        do:
+          Map.delete(state, state |> Enum.min_by(fn {_, {expires, _}} -> expires end) |> elem(0)),
         else: state
 
     {:reply, :ok, Map.put(state, id, {now + @ttl, metadata})}
@@ -90,7 +91,8 @@ defmodule EverydayTrust.SourceDisplay do
           do: {:reply, metadata, state},
           else: {:reply, %{}, Map.delete(state, id)}
 
-      _ -> {:reply, %{}, state}
+      _ ->
+        {:reply, %{}, state}
     end
   end
 
@@ -112,7 +114,8 @@ defmodule EverydayTrust.SourceDisplay do
           _ -> nil
         end
 
-      _ -> nil
+      _ ->
+        nil
     end
   end
 

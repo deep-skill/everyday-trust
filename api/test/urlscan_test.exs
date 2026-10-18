@@ -7,7 +7,15 @@ defmodule EverydayTrust.UrlscanTest do
   @uuid "99d0b58c-6058-4d49-8eae-0e42d6c48fbd"
 
   setup do
-    keys = [:urlscan_enabled, :urlscan_api_key, :test_urlscan_request, :test_urlscan_wait, :test_urlscan_quota, :test_urlscan_deadline]
+    keys = [
+      :urlscan_enabled,
+      :urlscan_api_key,
+      :test_urlscan_request,
+      :test_urlscan_wait,
+      :test_urlscan_quota,
+      :test_urlscan_deadline
+    ]
+
     original = Map.new(keys, &{&1, Application.fetch_env(:everyday_trust, &1)})
     Application.put_env(:everyday_trust, :urlscan_enabled, true)
     Application.put_env(:everyday_trust, :urlscan_api_key, "synthetic-test-key")
@@ -31,13 +39,27 @@ defmodule EverydayTrust.UrlscanTest do
   test "malicious scans add dated external evidence with a trusted report link" do
     stub(true)
     original = Analysis.run("Necesito revisar un enlace")
-    enriched = Urlscan.enrich(original, ["https://danger.example/signin?recipient=PRIVATE#FRAGMENT"])
+
+    enriched =
+      Urlscan.enrich(original, ["https://danger.example/signin?recipient=PRIVATE#FRAGMENT"])
 
     assert enriched["verdict"] == "high_risk"
     assert enriched["coverage"]["urlscan"] == "completed"
-    assert [%{"id" => "urlscan_malicious", "severity" => "high", "checked_at" => date}] = enriched["signals"]
+
+    assert [%{"id" => "urlscan_malicious", "severity" => "high", "checked_at" => date}] =
+             enriched["signals"]
+
     assert {:ok, _, _} = DateTime.from_iso8601(date)
-    assert [%{"status" => "matched", "report_url" => report, "final_hostname" => "landing.example", "brands" => ["Banco sintético"]}] = enriched["url_scans"]
+
+    assert [
+             %{
+               "status" => "matched",
+               "report_url" => report,
+               "final_hostname" => "landing.example",
+               "brands" => ["Banco sintético"]
+             }
+           ] = enriched["url_scans"]
+
     assert report == "https://urlscan.io/result/#{@uuid}/"
     refute Jason.encode!(enriched) =~ "PRIVATE"
     refute Jason.encode!(enriched) =~ "FRAGMENT"
@@ -55,7 +77,11 @@ defmodule EverydayTrust.UrlscanTest do
 
   test "pending scans expire without evidence and honor polling cadence" do
     parent = self()
-    Application.put_env(:everyday_trust, :test_urlscan_wait, fn milliseconds -> send(parent, {:wait, milliseconds}) end)
+
+    Application.put_env(:everyday_trust, :test_urlscan_wait, fn milliseconds ->
+      send(parent, {:wait, milliseconds})
+    end)
+
     Application.put_env(:everyday_trust, :test_urlscan_request, fn options ->
       if options[:method] == :post,
         do: submission(),
@@ -79,6 +105,7 @@ defmodule EverydayTrust.UrlscanTest do
           {:ok, %{status: 200, body: "{}"}}
         ] do
       :sys.replace_state(Cache, fn _ -> %{entries: %{}, pending: %{}} end)
+
       Application.put_env(:everyday_trust, :test_urlscan_request, fn options ->
         if options[:method] == :post, do: submission(), else: response
       end)
@@ -89,6 +116,7 @@ defmodule EverydayTrust.UrlscanTest do
 
   test "an unresponsive scan is killed by its total deadline and releases capacity" do
     Application.put_env(:everyday_trust, :test_urlscan_deadline, 30)
+
     Application.put_env(:everyday_trust, :test_urlscan_request, fn _ ->
       Process.sleep(5_000)
       submission()
@@ -107,7 +135,12 @@ defmodule EverydayTrust.UrlscanTest do
 
     assert checked["status"] == "no_match"
     assert_received {:request, options}
-    assert options[:json] == %{"url" => "https://clean.example/customer", "visibility" => "unlisted"}
+
+    assert options[:json] == %{
+             "url" => "https://clean.example/customer",
+             "visibility" => "unlisted"
+           }
+
     assert options[:redirect] == false
     assert options[:retry] == false
     assert_received {:request, result_options}
@@ -119,7 +152,16 @@ defmodule EverydayTrust.UrlscanTest do
 
   test "public visibility and arbitrary report URLs from the provider are never accepted" do
     Application.put_env(:everyday_trust, :test_urlscan_request, fn _ ->
-      {:ok, %{status: 200, body: Jason.encode!(%{"uuid" => @uuid, "visibility" => "public", "result" => "https://evil.example/"})}}
+      {:ok,
+       %{
+         status: 200,
+         body:
+           Jason.encode!(%{
+             "uuid" => @uuid,
+             "visibility" => "public",
+             "result" => "https://evil.example/"
+           })
+       }}
     end)
 
     assert %{"status" => "unavailable"} = Urlscan.check("https://visibility.example/")
@@ -139,7 +181,10 @@ defmodule EverydayTrust.UrlscanTest do
   end
 
   test "disabled flags and missing keys never call urlscan" do
-    Application.put_env(:everyday_trust, :test_urlscan_request, fn _ -> flunk("unexpected request") end)
+    Application.put_env(:everyday_trust, :test_urlscan_request, fn _ ->
+      flunk("unexpected request")
+    end)
+
     Application.delete_env(:everyday_trust, :urlscan_api_key)
     assert %{"status" => "unavailable"} = Urlscan.check("https://clean.example/")
     Application.put_env(:everyday_trust, :urlscan_enabled, false)
@@ -148,7 +193,11 @@ defmodule EverydayTrust.UrlscanTest do
 
   test "quota exhaustion prevents submissions" do
     Application.put_env(:everyday_trust, :test_urlscan_quota, fn -> false end)
-    Application.put_env(:everyday_trust, :test_urlscan_request, fn _ -> flunk("unexpected request") end)
+
+    Application.put_env(:everyday_trust, :test_urlscan_request, fn _ ->
+      flunk("unexpected request")
+    end)
+
     assert %{"status" => "budget_exhausted"} = Urlscan.check("https://quota.example/")
   end
 
@@ -184,7 +233,15 @@ defmodule EverydayTrust.UrlscanTest do
     assert expires - System.monotonic_time(:millisecond) <= 21_600_000
     assert expires - System.monotonic_time(:millisecond) > 21_590_000
     refute Jason.encode!(cached) =~ "/one"
-    :sys.replace_state(Cache, fn current -> put_in(current, [:entries, "cache.example"], {System.monotonic_time(:millisecond) - 1, cached}) end)
+
+    :sys.replace_state(Cache, fn current ->
+      put_in(
+        current,
+        [:entries, "cache.example"],
+        {System.monotonic_time(:millisecond) - 1, cached}
+      )
+    end)
+
     Urlscan.check("https://cache.example/three")
     assert_received :submitted
   end
@@ -201,7 +258,15 @@ defmodule EverydayTrust.UrlscanTest do
   end
 
   test "private hosts, nonstandard ports and unsupported schemes are rejected" do
-    for url <- ["http://localhost", "https://app.internal/", "http://127.0.0.1/", "http://169.254.169.254/", "https://[::1]/", "https://example.com:8443/", "ftp://example.com/file"] do
+    for url <- [
+          "http://localhost",
+          "https://app.internal/",
+          "http://127.0.0.1/",
+          "http://169.254.169.254/",
+          "https://[::1]/",
+          "https://example.com:8443/",
+          "ftp://example.com/file"
+        ] do
       assert is_nil(Urlscan.sanitize_url(url))
     end
   end
@@ -209,10 +274,18 @@ defmodule EverydayTrust.UrlscanTest do
   test "external titles and brand lists are bounded text, never instructions or HTML" do
     body = scan_result(false)
     body = put_in(body, ["page", "title"], String.duplicate("<script>untrusted</script>", 100))
-    body = put_in(body, ["verdicts", "urlscan", "brands"], for(_ <- 1..20, do: %{"name" => String.duplicate("x", 200)}))
+
+    body =
+      put_in(
+        body,
+        ["verdicts", "urlscan", "brands"],
+        for(_ <- 1..20, do: %{"name" => String.duplicate("x", 200)})
+      )
 
     Application.put_env(:everyday_trust, :test_urlscan_request, fn options ->
-      if options[:method] == :post, do: submission(), else: {:ok, %{status: 200, body: Jason.encode!(body)}}
+      if options[:method] == :post,
+        do: submission(),
+        else: {:ok, %{status: 200, body: Jason.encode!(body)}}
     end)
 
     checked = Urlscan.check("https://bounded.example/")
@@ -224,7 +297,10 @@ defmodule EverydayTrust.UrlscanTest do
   defp stub(malicious, observer \\ fn _ -> :ok end) do
     Application.put_env(:everyday_trust, :test_urlscan_request, fn options ->
       observer.(options)
-      if options[:method] == :post, do: submission(), else: {:ok, %{status: 200, body: Jason.encode!(scan_result(malicious))}}
+
+      if options[:method] == :post,
+        do: submission(),
+        else: {:ok, %{status: 200, body: Jason.encode!(scan_result(malicious))}}
     end)
   end
 
@@ -234,7 +310,12 @@ defmodule EverydayTrust.UrlscanTest do
   defp scan_result(malicious),
     do: %{
       "task" => %{"visibility" => "unlisted", "time" => "2026-10-18T13:00:00Z"},
-      "page" => %{"url" => "https://landing.example/private?victim=SECRET#FRAGMENT", "title" => "Página sintética"},
-      "verdicts" => %{"urlscan" => %{"malicious" => malicious, "brands" => [%{"name" => "Banco sintético"}]}}
+      "page" => %{
+        "url" => "https://landing.example/private?victim=SECRET#FRAGMENT",
+        "title" => "Página sintética"
+      },
+      "verdicts" => %{
+        "urlscan" => %{"malicious" => malicious, "brands" => [%{"name" => "Banco sintético"}]}
+      }
     }
 end
