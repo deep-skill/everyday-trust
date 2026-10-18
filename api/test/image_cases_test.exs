@@ -148,6 +148,21 @@ defmodule EverydayTrust.ImageCasesTest do
     refute_receive :unexpected_interpretation
   end
 
+  test "an invalid IDNA link transcribed from an image completes with a warning" do
+    Application.put_env(:everyday_trust, :test_image_request, fn _, _ ->
+      response("Revisa https://xn--a.example")
+    end)
+
+    assert {:ok, result} = create_image()
+    assert result["analysis_status"] == "completed"
+    assert result["coverage"]["image_extraction"] == "completed"
+    assert result["verdict"] in ["suspicious", "high_risk"]
+    assert Enum.any?(result["signals"], &(&1["id"] == "invalid_url"))
+    assert Repo.aggregate(Case, :count) == 1
+    assert quota_count("ai", "global") == 1
+    refute_received :unexpected_interpretation
+  end
+
   test "unreadable images and provider failures create no case and retain their bounded charge" do
     Application.put_env(:everyday_trust, :test_image_request, fn _, _ -> response("", true) end)
     assert {:error, 422, _} = create_image()

@@ -67,6 +67,18 @@ defmodule EverydayTrust.AnalysisTest do
     end
   end
 
+  test "a rejected IDNA label cannot abort analysis or hide other links" do
+    invalid = "https://xn--a.example"
+    assert catch_exit(:idna.encode(~c"xn--a.example"))
+    assert Signals.parse(invalid) == nil
+
+    result = Analysis.run("#{invalid} https://www.viabcp.com")
+
+    assert result["verdict"] in ["suspicious", "high_risk"]
+    assert Enum.any?(result["signals"], &(&1["id"] == "invalid_url"))
+    assert Enum.any?(result["domains"], &(&1["domain"] == "viabcp.com"))
+  end
+
   for text <- [
         "Yapéame S/ 500: https://www.viabcp.com",
         "Soy tu hijo: https://www.viabcp.com",

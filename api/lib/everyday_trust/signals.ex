@@ -65,6 +65,8 @@ defmodule EverydayTrust.Signals do
     end
   rescue
     _ -> nil
+  catch
+    :exit, _ -> nil
   end
 
   def ip?(nil), do: false

@@ -5,7 +5,7 @@ permissions:
   contents: read
 jobs:
   images:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/hotfix/invalid-idna-domain'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
