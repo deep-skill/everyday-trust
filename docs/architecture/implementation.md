@@ -99,3 +99,10 @@ JP indicó que las pruebas de los próximos días son internas de hackathon y au
 Los ejemplos dejaron el home y se integraron en las tarjetas de `/como-funciona`. Sus enlaces preparan una consulta mediante ids cerrados `bank`/`family`, sin ejecutar análisis automáticamente. La suite E2E quedó adaptada al nuevo recorrido y compiló, pero no se volvió a ejecutar completa. Validación de este corte:102 Phoenix,45 Node y tipos/build correctos.
 
 Prueba del contexto completo desde Chrome: /como-funciona → ejemplo bancario → formulario preparado → Revisar mensaje → caso completado con signals_and_ai y coverage.ai=completed. Veredicto alto riesgo conservado; destino .example no disponible y cobertura parcial, como corresponde a un fixture. Home sin ejemplos y tarjetas de guía revisadas visualmente.
+
+
+## Publicación del corte39b20a1
+
+El corte de UI, guía separada, comprobación de sitios y adaptador de contexto completo se publicó y desplegó mediante [CI](https://github.com/deep-skill/everyday-trust/actions/runs/39098407864), [imágenes GHCR](https://github.com/deep-skill/everyday-trust/actions/runs/39098426362) y [deploy AWS](https://github.com/deep-skill/everyday-trust/actions/runs/39098550194), todos correctos. La imagen ejecutada corresponde a39b20a1cb07233fc99d80df871e7de0adde739de. Los cambios posteriores de documentación no requieren reconstruir esa imagen.
+
+La verificación pública acreditó HTTPS200 con CSP/HSTS/no-store, HTTP308, guía200 sin ejemplos en el home, PKCE303, escritura desde otro origen403, ejemplo bancario de alto riesgo y raíz oficial completada. Sólo ejemplos ficticios, marcados como demostraciones. La IA permaneció desactivada; su activación general en esta URL pública queda pendiente de definir el alcance del piloto. Secretos, flags, digests y evidencia operativa en devops-agents. No se acredita con esto el recorrido OIDC completo de cuenta ni restore.

@@ -35,7 +35,7 @@ Los wireframes están disponibles como [consulta](diagrams/rendered/wireframe-co
 | Modelo físico y despliegue | EC2 + Compose + Nginx, RDS privado y Cognito desplegados; Actions/GHCR/OIDC/SSM y Tunnel público verificados |
 | C4 lógico | Borrador modelado y validado con Structurizr |
 | Nombre y marca | Everyday Trust confirmado para el proyecto y `deep-skill/everyday-trust` para el repo. Web: ¿Es estafa? + «Revisa antes de responder»; identidad visual aprobada provisionalmente; pantallas para revisión |
-| IA | Contributor con mensaje completo y evidencia para pruebas internas de hackathon, autorizado por JP. Cambiar modelo/modalidad antes del lanzamiento general; AWS mantiene IA desactivada hasta publicar el corte |
+| IA | Contributor con mensaje completo y evidencia para pruebas internas de hackathon, autorizado por JP. Cambiar modelo/modalidad antes del lanzamiento general; Corte desplegado; AWS mantiene IA desactivada mientras se define el alcance del piloto público |
 | Implementación | API, BFF, UI, sesiones e historial implementados. Consulta pública verificada y 12 comprobaciones de identidad/propiedad/borrado con Cognito real; OIDC completo en navegador AWS pendiente |
 
 ## Entrega del evento y arquitectura objetivo

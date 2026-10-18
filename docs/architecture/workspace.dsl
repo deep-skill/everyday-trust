@@ -3,7 +3,7 @@ workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contri
         visitor = person "Persona que consulta" "Evalúa un mensaje y decide su siguiente acción, con o sin cuenta."
         operator = person "Operador" "Mantiene fuentes, costos y funcionamiento sin leer mensajes en logs."
         identity = softwareSystem "Servicio de identidad" "Registro, confirmación, recuperación y acceso con Amazon Cognito."
-        intelligence = softwareSystem "Proveedor de IA" "Muse Spark 1.3 Contributor con mensaje completo y evidencia; piloto interno, publicación pendiente."
+        intelligence = softwareSystem "Proveedor de IA" "Muse Spark 1.3 Contributor con mensaje completo y evidencia; piloto interno, activación pública pendiente."
         sites = softwareSystem "Sitios consultados" "Raíz pública mediante HEAD, DNS/IP fijados, redirecciones limitadas; sin HTML ni JavaScript."
         sources = softwareSystem "Fuentes verificables" "Dominios oficiales, Phishing.Database y RDAP; otras fuentes por integrar."
 
@@ -97,7 +97,7 @@ workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contri
                 artifacts = infrastructureNode "S3 privado" "Artefactos versionados y snapshots de fuentes permitidas." "Amazon S3"
                 oidc = infrastructureNode "IAM / OIDC" "Confianza restringida a repo y rama o environment." "AWS IAM"
             }
-            deploymentNode "API externa de IA" "Contributor del piloto interno; desactivado en AWS hasta publicar el corte." "HTTPS" {
+            deploymentNode "API externa de IA" "Contributor del piloto interno; desactivado en AWS; activación del piloto pendiente." "HTTPS" {
                 softwareSystemInstance intelligence
             }
             ci -> registry "Publica imágenes por SHA/digest" "HTTPS"

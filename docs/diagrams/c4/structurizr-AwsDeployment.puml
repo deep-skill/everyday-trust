@@ -125,7 +125,7 @@ rectangle "AWS / us-east-1\n<size:16>[Deployment Node: Amazon Web Services]</siz
 }
 
 rectangle "API externa de IA\n<size:16>[Deployment Node: HTTPS]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWS.APIexternadeIA {
-  rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nMuse Spark 1.3 Contributor con mensaje completo y evidencia; piloto interno, publicación pendiente." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as AWS.APIexternadeIA.ProveedordeIA_1
+  rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nMuse Spark 1.3 Contributor con mensaje completo y evidencia; piloto interno, activación pública pendiente." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as AWS.APIexternadeIA.ProveedordeIA_1
 }
 
 AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.cloudflared --> AWS.Cloudflare.DNSHTTPSyWAF <<Relationship-UmVsYXRpb25zaGlw>> : "Establece túnel saliente\n<size:16>[QUIC o HTTP/2 cifrado]</size>"
