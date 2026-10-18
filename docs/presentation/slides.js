@@ -19,8 +19,9 @@ document.querySelector('#next').onclick = () => show(index + 1);
 notesToggle.onclick = toggleNotes;
 document.querySelector('#fullscreen').onclick = fullscreen;
 let motionOff = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const architectureSource = document.querySelector('.architecture-diagram').getAttribute('src').split('#')[0];
 function motion() {
-  document.querySelector('.architecture-diagram').src = `architecture.svg${motionOff ? '#still' : ''}`;
+  document.querySelector('.architecture-diagram').src = `${architectureSource}${motionOff ? '#still' : ''}`;
   document.querySelector('#motion').textContent = `Animación: ${motionOff ? 'pausada' : 'activa'}`;
   document.querySelector('#motion').setAttribute('aria-pressed', String(motionOff));
 }

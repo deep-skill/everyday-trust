@@ -2,6 +2,8 @@
 
 Cinco slides, pensadas para tres minutos con una demo breve. HTML/CSS/JavaScript sin bibliotecas, fuentes externas, analítica ni llamadas al modelo. Fuente editable en este directorio. Publicación en `/presentacion/` mediante `scripts/sync-presentation.mjs` antes del build; no editar la copia generada en static.
 
+El build añade una versión SHA-256 de contenido a las referencias CSS, JavaScript, SVG y marca para evitar archivos antiguos en la caché de Cloudflare. La pausa de animación conserva esa versión del SVG. La copia editable sigue abriéndose directamente sin build. Cloudflare puede añadir su propio beacon al HTML público; no forma parte de los slides fuente.
+
 1. Escala regional: 1.291 millones de intentos de phishing bloqueados por Kaspersky en Latinoamérica, últimos doce meses del Panorama 2025 publicado el 10-sep-2025. Contexto local: 29.342 registros de fraude informático del MPFN en Perú, enero-diciembre de 2025. Las unidades, geografías y periodos se muestran por separado; el detalle metodológico queda en notas y evidencia.
 2. Producto disponible y ejemplo ficticio, con explicación de capacidades y límites.
 3. Extensión y agentes en PC/celular como roadmap con permisos. La monetización de prevención personal/familiar es una hipótesis.
