@@ -114,3 +114,22 @@ JP autorizó expresamente habilitar Muse Spark Contributor en la URL pública si
 Una repetición posterior completó la IA del caso bancario, pero no la del enlace oficial, y el chequeo estricto falló. La activación no garantiza disponibilidad del proveedor; la aplicación conserva las señales y declara cobertura incompleta cuando la IA falla. No se amplió el plazo ni se añadieron llamadas automáticas para ocultar ese resultado.
 
 Por solicitud de JP, se detuvo el entorno local y se cerró Docker Desktop. Se eliminaron dependencias, compilaciones y caché regenerables, conservando fuentes, credenciales y volúmenes de datos. La aplicación AWS continúa operativa; para retomar desarrollo local se reinstalan dependencias y se levanta Compose según el README. El detalle de limpieza queda en devops-agents.
+
+
+## Tracción, reseñas y pitch,18-oct
+
+Corte3afb181: métricas discretas al pie, visitas aproximadas por sesión y consultas completadas, sin exponer UTC ni cuotas en la portada. Los totales excluyen demostraciones. Las reseñas requieren el caso completado y su sesión/titular; se validan estrellas y longitud, hay cuotas y un índice único impide duplicados. Sólo se publica el promedio agregado; el comentario llega al equipo, no al modelo. Retención30d y borrado con cuenta, manteniendo agregados anónimos. El modo demo también separa sus reseñas de la tracción.
+
+Cognito ya permitía cuenta e historial. Chrome privado comprobó acceso, análisis, guardado y lectura de historial con una identidad sintética sin emails/SMS. El formulario nativo de Salir falló por Origin:null causado por no-referrer. Se cambió Referrer-Policy a same-origin, manteniendo CSRF. HTTP comprobó logout303 desde el origen propio y403 desde origen ajeno o null. La repetición visual final y revisión del componente nuevo quedaron bloqueadas por cgWindowNotFound en Chrome y Firefox; no se anuncian como aprobadas. El registro con confirmación de correo real y la recuperación de contraseña no se probaron con un buzón real.
+
+CI39102532151 pasó108 Phoenix y45 Node. Imágenes39102641782 construidas con amd64 nativo, SBOM y provenance. El añadido de evaluación, sin cambios al código de aplicación, pasó en CI39102714048 con109 Phoenix/45 Node:24 fixtures offline,0 verdes peligrosos,0 falsas alarmas y6 abstenciones. No mide precisión real ni desempeño de IA.
+
+Despliegue final39103055072 exitoso, mismas imágenes3afb181. Se validó Nginx antes de migrar y se asignaron permisos mínimos explícitos de la nueva tabla al rol API, sin ampliar IAM. Comprobación pública: caso bancario demo de alto riesgo con IA completada, reseña idempotente, comentario privado y retirado, aislamiento entre sesiones, cinco slides y SVG públicos200. Una visita técnica se verificó con dos peticiones y se excluyó después. Ráfaga acotada de30 lecturas de health:18 respuestas200 y12 con429; no fue prueba de carga y no llamó al modelo. Detalle operativo en devops-agents.
+
+[Presentación HTML](../presentation/index.html): cinco slides revisadas en Chrome local antes de perder el control visual, símbolos originales AWS, flechas animadas con pausa/movimiento reducido y notas de tres minutos. Publicada en /presentacion/ y registrada como URL de presentación de la entrega del evento. Borradores de comentario y posts personales en docs/launch/social-copy.md; menciones exactas pendientes de JP.
+
+
+Ajuste posterior155516f: el botón Salir usa un POST al mismo origen que devuelve el destino de salida en JSON y luego navega a Cognito. Conserva form-action self, el chequeo de origen, el borrado de sesión y la revocación. Evita depender de cómo cada navegador aplica la CSP a una redirección de formulario. Tipos/build y45 Node pasaron en local. El diagrama y slides no cambiaron. La repetición visual sigue pendiente del control de ventanas.
+
+
+Cierre155516f: CI39103396264 (109 Phoenix/45 Node), imágenes39103413549 y deploy39103553328 correctos. La verificación pública final repitió reseña demo/privacidad/titularidad y acreditó logout JSON200 con redirect_to, formulario303, origen ajeno/null403, HTTPS/CSP/HSTS/no-store, Referrer-Policy same-origin y Cognito lang=es. IA del caso demo completada. La visita técnica quedó excluida y la identidad QA con sus datos/sesión fue eliminada. El control visual sigue no disponible, por lo que ese último recorrido no se declara probado en navegador. No se enviaron posts en redes: faltan enlaces/menciones exactos de JP y navegador disponible.

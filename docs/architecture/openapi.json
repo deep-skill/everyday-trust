@@ -1217,10 +1217,301 @@
     },
     "/api/v1/stats": {
       "get": {
-        "summary": "Daily UTC aggregate counts, with demos separated",
+        "summary": "Daily and lifetime aggregate counts with demos separated; visits are not unique people",
         "responses": {
           "200": {
-            "description": "Counts only, no text or identifiers"
+            "description": "Counts only, no text or identifiers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totals": {
+                      "$ref": "#/components/schemas/TractionTotals"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ServiceToken": [],
+            "VisitorSession": []
+          }
+        ]
+      }
+    },
+    "/api/v1/cases/{id}/review": {
+      "post": {
+        "operationId": "post_case_review",
+        "responses": {
+          "200": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ServiceToken": [],
+            "VisitorSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "rating"
+                ],
+                "properties": {
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "comment": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "default": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Record one rating per completed case; comment is private and expires after 30 days"
+      },
+      "delete": {
+        "responses": {
+          "200": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Respuesta JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ServiceToken": [],
+            "VisitorSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "operationId": "delete_case_review_comment",
+        "summary": "Remove the private comment; historical anonymous rating aggregates remain"
+      }
+    },
+    "/api/v1/visits": {
+      "post": {
+        "operationId": "record_visit",
+        "summary": "Approximate browser-session visit; repeat requests deduplicate within the UTC day",
+        "security": [
+          {
+            "ServiceToken": [],
+            "VisitorSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily and lifetime counts; no identities or comments"
+          },
+          "429": {
+            "description": "Nginx request limit"
           }
         }
       }
@@ -1468,6 +1759,37 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 4
+          }
+        }
+      },
+      "TractionTotals": {
+        "type": "object",
+        "required": [
+          "visits",
+          "consultations",
+          "reviews",
+          "rating"
+        ],
+        "properties": {
+          "visits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "consultations": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reviews": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rating": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5
           }
         }
       }

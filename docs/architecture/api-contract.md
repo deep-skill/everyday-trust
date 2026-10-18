@@ -65,3 +65,8 @@ Los errores contienen código estable, mensaje para el usuario e identificador d
 ## Condiciones antes de implementar
 
 El OpenAPI versionará schemas, ejemplos sintéticos, autenticación, paginación, límites e idempotencia. El prototipo tiene `POST /api/analyze`; se conservará o retirará mediante una migración explícita tras validar el nuevo contrato. La especificación debe decidir qué estado del caso vive en el cliente y qué estado temporal necesita el servidor.
+
+
+## Actividad y reseñas
+
+POST /visits registra una visita aproximada por sesión y día, con cuotas de red/global. GET /stats incluye totals de visitas, consultas completadas, cantidad y promedio de valoraciones; no devuelve comentarios ni identidades y separa demostraciones. POST /cases/{id}/review requiere titularidad y caso completado, rating entero1..5 y comentario opcional hasta500 caracteres. Reintentar el mismo caso no duplica agregados. DELETE /cases/{id}/review retira el comentario privado y conserva el agregado histórico. Los comentarios no se mandan al modelo, vencen a los30 días y se borran al eliminar la cuenta vinculada. Contrato ejecutable actualizado en openapi.json.

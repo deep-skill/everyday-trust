@@ -1,6 +1,6 @@
-# Propuesta AWS, Docker y entrega continua
+# AWS, Docker y entrega continua
 
-Estado: diseño del primer despliegue, 17-oct-2026. Stack y RDS confirmados por JP; servicios de ejecución y automatización propuestos, aún sin aprovisionar. La operación completa se registra en `../devops-agents/docs/hack-the-andes-seguridad.md`.
+Estado: despliegue público operativo,18-oct-2026. EC2/Compose, RDS privado, Cognito, Tunnel y entrega por Actions/GHCR/OIDC/SSM están aprovisionados y comprobados; los límites de validación se detallan en implementación. La operación completa se registra en `../devops-agents/docs/hack-the-andes-seguridad.md`.
 
 ![Despliegue AWS propuesto](../diagrams/rendered/structurizr-AwsDeployment.svg)
 
@@ -12,14 +12,14 @@ Fuente reproducible: [workspace.dsl](workspace.dsl). Los nombres de nodos repres
 
 Cognito gestiona registro y acceso. Phoenix consulta fuentes permitidas y la API de IA directamente. El navegador sólo habla con la web de su mismo origen y con la pantalla de acceso de Cognito; no necesita llegar directamente a Phoenix ni a RDS.
 
-| Pieza | Configuración propuesta | Propósito |
+| Pieza | Configuración del corte | Propósito |
 |---|---|---|
 | Cloudflare | DNS, HTTPS, protección DDoS y WAF disponible en el plan | Entrada pública y mitigación de abuso |
 | cloudflared | Contenedor con túnel nombrado hacia `nginx:8080` | Conexión saliente al borde, sin puertos web abiertos en EC2 |
 | Nginx | Contenedor sin puertos publicados al host | Un punto de entrada con límites de cuerpo, tiempos de espera y cabeceras |
 | SvelteKit | Imagen multi-stage con adapter-node | UI y BFF; sesión opaca, renovación y protección CSRF |
 | Phoenix | Release multi-stage Elixir/OTP, API interna | Señales, política de riesgo, conversación, cuotas e historial |
-| EC2 | Linux x86_64, T3a según convención de Deep Skill | Ejecutar Compose; tamaño propuesto `t3a.medium`, 2 vCPU/4 GiB |
+| EC2 | Linux x86_64, T3a según convención de Deep Skill | Ejecutar Compose; tamaño `t3a.medium`, 2 vCPU/4 GiB |
 | RDS | PostgreSQL soportado, `db.t4g.micro`, Single-AZ y 20 GiB gp3 iniciales | Estado compartido y backups gestionados, separado del host de aplicaciones |
 | Cognito | User Pool y cliente web para BFF | Identidad, confirmación y recuperación |
 | SSM | Parameter Store y administración del servidor | Secretos por referencia y despliegue sin SSH público |
@@ -84,4 +84,4 @@ Para la demo se propone `verifica.deepskill.space`, pendiente de crear el regist
 - Probar deploy repetido, migraciones, rollback compatible y restauración RDS aislada.
 - Registrar ids reales, permisos, costos y resultados en `devops-agents`, y actualizar ambos inventarios.
 
-Estos controles siguen pendientes. Los diagramas y el runbook no cuentan como evidencia de un despliegue terminado.
+HTTPS, consulta, identidad, guardado, historial, límites y entrega están comprobados según implementación y el runbook. Quedan el ejercicio de restauración y la repetición visual final del logout corregido. El diagrama no sustituye esa evidencia.

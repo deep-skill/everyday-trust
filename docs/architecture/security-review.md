@@ -39,3 +39,6 @@ Fuentes revisadas el18-oct: [Cloudflare DDoS y capas](https://developers.cloudfl
 ## Corrección encontrada durante el OIDC de navegador
 
 El acceso, guardado y lectura de historial funcionaron, pero el formulario nativo de Salir fue rechazado: no-referrer puede producir Origin:null en un POST de formulario. Se cambia la política a same-origin, que conserva el origen en los formularios propios y omite referrer hacia otros sitios. No se desactiva la comprobación CSRF ni se acepta Origin:null. La repetición de navegador posterior al despliegue debe verificar la salida. Referencia: [Mozilla, Referrer-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Referrer-Policy).
+
+
+La salida mejorada solicita JSON al endpoint propio y navega después al destino Cognito validado por el servidor. Esto evita que la redirección de un POST nativo quede bloqueada por form-action self en ciertos navegadores, conservando esa CSP. El endpoint mantiene303 para clientes de formulario,200/redirect_to para la petición JSON y403 para orígenes ajenos. [Referencia de compatibilidad de form-action](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/form-action).

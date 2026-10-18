@@ -50,3 +50,10 @@ Propuesta de requisitos: conservar paridad del motor de señales, impedir rebaja
 La evaluación mínima de esos invariantes acompaña al primer corte P0. El informe ampliado de 50 a 100 casos y la comparación de varios modelos pueden tener una prioridad posterior; aplazar ese informe no aplaza las comprobaciones necesarias para habilitar la IA. El conjunto mínimo debe incluir fraude sustentado, texto sospechoso sin enlaces, un mensaje legítimo parecido, fuente caída, salida inválida e inyección de instrucciones.
 
 Los umbrales de calidad, latencia y costo se fijan después de la primera medición, antes de elegir modelo y publicar afirmaciones. Presentar el informe completo y sus límites; el número de pruebas aprobadas no equivale al número de usuarios ni a fraudes evitados.
+
+
+## Corte reproducible del18-oct
+
+Se ejecutaron24 fixtures sintéticos en CI, con reglas y red desactivada, sin usar el modelo ni el feed. Hubo0 resultados verdes en los casos etiquetados riesgosos,0 falsas alarmas en los legítimos y6 abstenciones. Las abstenciones se conservan como categoría propia, no como aciertos. Son ejemplos de regresión escritos por el equipo, no un conjunto reservado ni una estimación de precisión en mensajes reales. Tampoco miden calidad del LLM, latencia externa o eficacia de prevención.
+
+Corpus: `api/test/fixtures/evaluation.json`; ejecutor: `api/test/evaluation_test.exs`, incluido en `mix test`. [Resultado completo](evaluation-report.json). [Ejecución CI](https://github.com/deep-skill/everyday-trust/actions/runs/39102714048),109 pruebas de API y45 Node. El corte de aplicación3afb181 tenía108 pruebas de API; la prueba adicional sólo añade evaluación, sin modificar el código de producción.

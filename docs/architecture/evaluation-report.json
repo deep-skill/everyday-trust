@@ -1,0 +1,129 @@
+{
+  "mode": "rules_offline_synthetic",
+  "rows": [
+    {
+      "id": "legitimate-01",
+      "label": "legitimate",
+      "verdict": "inconclusive"
+    },
+    {
+      "id": "legitimate-02",
+      "label": "legitimate",
+      "verdict": "inconclusive"
+    },
+    {
+      "id": "legitimate-03",
+      "label": "legitimate",
+      "verdict": "inconclusive"
+    },
+    {
+      "id": "legitimate-04",
+      "label": "legitimate",
+      "verdict": "inconclusive"
+    },
+    {
+      "id": "legitimate-05",
+      "label": "legitimate",
+      "verdict": "no_signals_detected"
+    },
+    {
+      "id": "legitimate-06",
+      "label": "legitimate",
+      "verdict": "no_signals_detected"
+    },
+    {
+      "id": "legitimate-07",
+      "label": "legitimate",
+      "verdict": "inconclusive"
+    },
+    {
+      "id": "legitimate-08",
+      "label": "legitimate",
+      "verdict": "inconclusive"
+    },
+    {
+      "id": "risky-01",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-02",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-03",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-04",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-05",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-06",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-07",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-08",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-09",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-10",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-11",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-12",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-13",
+      "label": "risky",
+      "verdict": "high_risk"
+    },
+    {
+      "id": "risky-14",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-15",
+      "label": "risky",
+      "verdict": "suspicious"
+    },
+    {
+      "id": "risky-16",
+      "label": "risky",
+      "verdict": "high_risk"
+    }
+  ],
+  "false_alarms": 0,
+  "cases": 24,
+  "dangerous_green": 0,
+  "abstentions": 6
+}

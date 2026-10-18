@@ -68,6 +68,31 @@ entity QuotaBucket {
   * expires_at : timestamp
 }
 
+entity Review {
+  * id : identifier <<PK>>
+  --
+  * case_id : identifier <<UNIQUE>>
+  owner_id : identifier <<FK>>
+  * kind : query or demo
+  * rating : integer 1..5
+  comment : private text, max 500
+  * created_at : timestamp
+}
+entity DailyMetric {
+  * day : date <<PK>>
+  * kind : site, query or demo <<PK>>
+  * metric : category <<PK>>
+  --
+  * count : integer
+}
+AccountProfile |o--o{ Review : optional owner, delete cascade
+Review ..> DailyMetric : anonymous aggregates
+note bottom of Review
+  Private comments expire after 30 days.
+  No original analyzed message.
+  Case id has no FK to expiring cases.
+end note
+
 AccountProfile ||--o{ SavedCase : owns
 SavedCase ||--o{ CaseEvidence : contains
 Source ||--o{ SourceVersion : versions
