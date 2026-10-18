@@ -76,14 +76,22 @@ defmodule EverydayTrust.TractionTest do
     Application.put_env(:everyday_trust, :ai_provider, "meta")
     Application.put_env(:everyday_trust, :ai_key, "synthetic-key")
     Application.put_env(:everyday_trust, :ai_data_approved, true)
-    Application.put_env(:everyday_trust, :test_model_request, fn _, _ -> flunk("Unexpected model call") end)
+    Application.put_env(:everyday_trust, :test_model_request, fn _, _ ->
+      flunk("Unexpected model call")
+    end)
 
     on_exit(fn ->
       for key <- [:ai_provider, :ai_key, :ai_data_approved, :test_model_request],
           do: Application.delete_env(:everyday_trust, key)
     end)
 
-    reply = EverydayTrust.Interpreter.followup(EverydayTrust.Analysis.run("Hola"), "Escribe un poema sobre fútbol", [])
+    reply =
+      EverydayTrust.Interpreter.followup(
+        EverydayTrust.Analysis.run("Hola"),
+        "Escribe un poema sobre fútbol",
+        []
+      )
+
     assert reply =~ "esta consulta"
     assert Repo.query!("SELECT count(*) FROM quota_buckets WHERE key LIKE 'ai:%'").rows == [[0]]
   end
