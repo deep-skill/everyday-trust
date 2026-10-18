@@ -1,6 +1,6 @@
 # Identidad de la web y nombre del proyecto público
 
-Estado: JP confirmó **Everyday Trust** como nombre del proyecto público y `deep-skill/everyday-trust` para el repo el 17-oct-2026. **¿Es estafa?** y **«Revisa antes de responder»** son el nombre y la bajada de la web. JP aprobó provisionalmente la identidad visual 0.1: logo, favicon, paleta y tipografía. Las pantallas de consulta siguen como propuesta para revisión antes de integrarlas a la app. No acredita registro de marca ni disponibilidad de dominio.
+Estado: JP confirmó **Everyday Trust** como nombre del proyecto público y `deep-skill/everyday-trust` para el repo el 17-oct-2026. **¿Es estafa?** y **«Revisa antes de responder»** son el nombre y la bajada de la web. JP aprobó provisionalmente la identidad visual 0.1: logo, favicon, paleta y tipografía. Después, JP pidió implementar. La primera UI funcional usa esta propuesta como referencia; la identidad sigue aprobada provisionalmente. No acredita registro de marca ni disponibilidad de dominio.
 
 ## Promesa y voz
 
@@ -36,7 +36,7 @@ La búsqueda inicial encontró coincidencias claras para alternativas descartada
 - [Identidad en PNG](rendered/brand-board.png), [consulta de escritorio](rendered/consultation-desktop.png) y [consulta móvil](rendered/consultation-mobile.png).
 - [Resultado de escritorio](rendered/case-desktop.png), [resultado móvil](rendered/case-mobile.png) y [ejemplo bancario móvil](rendered/case-bank-mobile.png).
 
-Los HTML pueden abrirse directamente en un navegador; no requieren instalar paquetes ni conectar la API. Los enlaces Markdown del repo sirven para inspeccionar fuentes; los PNG permiten revisar el diseño sin ejecutar nada. La propuesta todavía no cambia la interfaz de `src/` ni el deploy.
+Los HTML pueden abrirse directamente en un navegador; no requieren instalar paquetes ni conectar la API. Los enlaces Markdown del repo sirven para inspeccionar fuentes; los PNG permiten revisar el diseño sin ejecutar nada. La app de `src/` ya integra una primera versión funcional, con resultados del backend. Estos HTML conservan su propósito de revisión visual y ejemplos ficticios.
 
 ## Logo y archivos
 

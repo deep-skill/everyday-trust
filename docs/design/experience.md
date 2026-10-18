@@ -70,3 +70,7 @@ Objetivo: WCAG 2.2 AA en las pantallas principales. Navegación por teclado, foc
 Pruebas de uso: completar una consulta sin ayuda; explicar qué se comprobó y qué falta; encontrar la acción según si ya hubo clic, datos compartidos o pago; crear cuenta para guardar; recuperar y borrar un caso. La validación visual revisa 390 px y escritorio, carga, error y contenido largo.
 
 Referencia: [WCAG 2.2](https://www.w3.org/TR/WCAG22/).
+
+## Primer corte implementado
+
+Consulta, resultado, orientación acotada, cuenta, guardado e historial ya tienen una implementación local en `src/` y `api/`. Ver [implementación](../architecture/implementation.md) para límites y pruebas. Las láminas anteriores siguen siendo la propuesta visual; las capturas con prefijo `app-` en `rendered/` corresponden a la app ejecutada con ejemplos sintéticos. El acceso se prueba con identidad simulada, sin acreditar Cognito real.

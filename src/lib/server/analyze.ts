@@ -1,4 +1,4 @@
-import { analyzeText, analyzeUrl, extractPhones, extractUrls } from './signals';
+import { analyzeText, analyzeUrl, extractPhones, extractUrls } from './signals.ts';
 import type { AnalysisResult, Severity, Signal, Verdict } from '$lib/types';
 
 const MAX_NETWORK_URLS = 5;

@@ -1,0 +1,100 @@
+import asyncio,json,os
+from urllib.parse import urlparse,parse_qs,urlencode
+from pathlib import Path
+from playwright.async_api import async_playwright
+BASE=os.environ.get('E2E_BASE_URL','http://localhost:4173')
+assert urlparse(BASE).hostname in ('localhost','127.0.0.1'), 'Local test only'
+OUT=Path('docs/design/rendered');OUT.mkdir(parents=True,exist_ok=True)
+checks=[]
+import secrets
+RUN=secrets.token_hex(4)
+def ok(name,value=True):
+ assert value,name
+ checks.append(name)
+async def auth_route(route,subject):
+ q=parse_qs(urlparse(route.request.url).query)
+ if '/oauth2/authorize' in route.request.url:
+  ok('PKCE S256 requested',q['code_challenge_method']==['S256'])
+  target=BASE+'/auth/callback?'+urlencode({'state':q['state'][0],'code':q['nonce'][0]+'~'+subject+'~'+q['code_challenge'][0]})
+ else: target=BASE
+ await route.fulfill(status=302,headers={'location':target},body='')
+async def login(page,subject):
+ await page.route('https://everyday-trust-qa.auth.us-east-1.amazoncognito.com/**',lambda route:auth_route(route,subject))
+ await page.get_by_role('button',name='Crear cuenta →',exact=True).click()
+ await page.get_by_role('link',name='Crear cuenta o iniciar sesión →').click()
+ await page.wait_for_load_state('networkidle')
+ await page.get_by_role('button',name='Cuenta',exact=True).wait_for()
+async def fetch(page,path,method='GET',data=None):
+ return await page.evaluate('''async ({path,method,data})=>{let r=await fetch('/api/v1/'+path,{method,headers:{'content-type':'application/json'},...(data===null?{}:{body:JSON.stringify(data)})});return {status:r.status,body:await r.json()}}''',{'path':path,'method':method,'data':data})
+async def run():
+ async with async_playwright() as p:
+  browser=await p.chromium.launch(channel='chrome-dev',headless=True)
+  context=await browser.new_context(viewport={'width':1440,'height':1100})
+  page=await context.new_page();errors=[]
+  page.on('pageerror',lambda e:errors.append(str(e)))
+  await page.goto(BASE,wait_until='networkidle')
+  ok('initial title',await page.title()=='¿Es estafa? · Everyday Trust')
+  ok('empty submit disabled',await page.get_by_role('button',name='Revisar mensaje →').is_disabled())
+  for width in [320,390,768,1440]:
+   await page.set_viewport_size({'width':width,'height':1100})
+   ok('no overflow '+str(width),await page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+  await page.screenshot(path=str(OUT/'app-consultation-desktop.png'),full_page=True)
+  await page.get_by_role('button',name='Un familiar con otro número →').click()
+  await page.locator('.result-card').wait_for()
+  ok('family is suspicious',await page.locator('.result-status').inner_text()=='Sospechoso\nRevisión finalizada')
+  case_id=parse_qs(urlparse(page.url).query)['case'][0]
+  await page.get_by_role('button',name='Compartí datos',exact=True).click()
+  await page.get_by_role('button',name='Pagué',exact=True).click()
+  await page.get_by_role('button',name='Ver orientación',exact=True).click()
+  await page.locator('.follow-up').wait_for()
+  ok('combined guidance', 'datos y realizaste un pago' in await page.locator('.follow-up').inner_text())
+  await page.screenshot(path=str(OUT/'app-result-desktop.png'),full_page=True)
+  await page.get_by_role('button',name='Crear cuenta para guardar →').click()
+  await page.get_by_role('button',name='Cerrar',exact=True).click()
+  await login(page,'qa-alice-'+RUN)
+  await page.get_by_role('button',name='Guardar consulta',exact=True).wait_for()
+  ok('case survives login',parse_qs(urlparse(page.url).query)['case'][0]==case_id)
+  await page.get_by_role('button',name='Guardar consulta',exact=True).click()
+  await page.get_by_role('button',name='Consulta guardada',exact=True).wait_for()
+  records=await fetch(page,'history')
+  ok('one voluntary saved case',records['status']==200 and len(records['body']['items'])==1)
+  saved_id=records['body']['items'][0]['id']
+  parallel=await page.evaluate("async()=>Promise.all([fetch('/api/v1/me'),fetch('/api/v1/me')].map(async p=>(await p).status))")
+  ok('refresh rotation serialized across concurrent requests',parallel==[200,200])
+  cookies=await context.cookies()
+  ok('opaque protected session cookie',any(c['name']=='__Host-trust-session' and c['httpOnly'] and c['secure'] and len(c['value'])==43 for c in cookies))
+  ok('no browser-readable tokens',await page.evaluate(r'document.cookie==="" && !Object.values(localStorage).concat(Object.values(sessionStorage)).some(v=>v.includes("synthetic-refresh") || /eyJ[A-Za-z0-9_-]+\.eyJ/.test(v))'))
+  other=await browser.new_context(viewport={'width':1440,'height':1000});bob=await other.new_page()
+  await bob.goto(BASE,wait_until='networkidle');await login(bob,'qa-bob-'+RUN)
+  ok('other account has empty history',len((await fetch(bob,'history'))['body']['items'])==0)
+  ok('other account cannot read saved case',(await fetch(bob,'history/'+saved_id))['status']==404)
+  ok('other account cannot delete saved case',(await fetch(bob,'history/'+saved_id,'DELETE'))['status']==404)
+  ok('other account cannot read temporary case',(await fetch(bob,'cases/'+case_id))['status']==404)
+  await page.get_by_role('button',name='Mis consultas',exact=True).click()
+  await page.locator('.history-list li').wait_for()
+  await page.screenshot(path=str(OUT/'app-history-desktop.png'),full_page=True)
+  await page.get_by_role('button',name='Borrar consulta guardada').click()
+  await page.locator('.empty-history').wait_for()
+  ok('own saved case deleted',len((await fetch(page,'history'))['body']['items'])==0)
+  csrf=await context.request.post(BASE+'/api/v1/cases',data={'text':'synthetic'},headers={'origin':'https://attacker.example'})
+  ok('cross-origin write blocked',csrf.status==403)
+  large=await context.request.post(BASE+'/api/v1/cases',data={'text':'a'*40000},headers={'origin':BASE})
+  ok('body limit',large.status==413)
+  retired=await context.request.post(BASE+'/api/analyze',data={'text':'synthetic'},headers={'origin':BASE})
+  ok('legacy public endpoint retired',retired.status==410)
+  await page.get_by_role('button',name='Cuenta',exact=True).click()
+  await page.get_by_role('button',name='Eliminar mi cuenta',exact=True).click()
+  await page.get_by_role('button',name='Confirmar eliminación de mi cuenta',exact=True).click()
+  await page.get_by_role('button',name='Crear cuenta →',exact=True).wait_for()
+  ok('account deletion signs browser out',not any(c['name']=='__Host-trust-session' for c in await context.cookies()))
+  mobile=await browser.new_context(viewport={'width':390,'height':1000});m=await mobile.new_page()
+  await m.goto(BASE,wait_until='networkidle')
+  await m.screenshot(path=str(OUT/'app-consultation-mobile.png'),full_page=True)
+  await m.get_by_role('button',name='Un supuesto aviso del banco →').click();await m.locator('.result-card').wait_for()
+  ok('bank example high risk','Alto riesgo' in await m.locator('.result-status').inner_text())
+  ok('mobile result no overflow',await m.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+  await m.screenshot(path=str(OUT/'app-result-mobile.png'),full_page=True)
+  ok('no browser JS errors',not errors)
+  await browser.close()
+ print(json.dumps({'passed':len(checks),'checks':checks},ensure_ascii=False))
+asyncio.run(run())

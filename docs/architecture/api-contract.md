@@ -1,6 +1,6 @@
 # Contrato funcional de la API
 
-Estado: borrador de recursos y comportamiento, anterior al contrato OpenAPI físico. No describe endpoints ya implementados.
+Estado: contrato funcional objetivo. El primer corte ya implementa estos recursos en Phoenix, con respuesta finalizada síncrona y guardado idempotente por cuenta/caso. Las propuestas de continuación asíncrona siguen sin implementar. Ver [estado físico y límites](implementation.md).
 
 La API usa el prefijo `/api/v1`, JSON y una política explícita de acceso por recurso. Los identificadores no conceden acceso. Una operación sobre un caso temporal exige su sesión original; una operación sobre un caso guardado exige su propietario autenticado.
 

@@ -2,53 +2,79 @@
 
 **¿Es estafa? · Revisa antes de responder.**
 
-Verificador de estafas para el Perú. Pegas el mensaje, link o número que te llegó por WhatsApp o SMS y recibes un veredicto en semáforo, el porqué en lenguaje simple y qué hacer.
+Verificador de mensajes sospechosos con contexto peruano, por Deep Skill para Hack the Andes 2026, track Seguridad. Everyday Trust es el proyecto público; ¿Es estafa? es su primera web.
 
-Everyday Trust es el nombre del proyecto público de Deep Skill para Hack the Andes 2026, track Seguridad. **¿Es estafa?** es su primera web, enfocada en revisar mensajes con contexto peruano. El nombre general permite evolucionar hacia prevención digital sin cambiar cómo se presenta la web a sus usuarios.
+El usuario consulta sin cuenta y recibe señales, un resumen y un siguiente paso. Con Cognito puede acceder a mayor uso, guardar voluntariamente resúmenes, consultar su historial privado y borrar consultas o su cuenta. La UI usa la [identidad visual provisional](docs/design/brand.md).
 
-La [definición de negocio, UX y arquitectura](docs/README.md) describe el producto objetivo antes de continuar la implementación. El stack confirmado es SvelteKit, API Elixir/Phoenix, PostgreSQL y Cognito, con BFF y sesión opaca. La [propuesta AWS](docs/architecture/aws-deployment.md) usa un EC2 con Docker Compose, RDS PostgreSQL privado, Cognito y Cloudflare; CI/CD propuesto con GitHub Actions y GHCR; todavía no está implementada. Las instrucciones Cloudflare de este archivo corresponden al prototipo existente.
+## Estado comprobable
 
-La [identidad visual](docs/design/brand.md), con logo, favicon, paleta y tipografía, está aprobada provisionalmente. Las vistas de móvil/escritorio siguen para revisión y todavía están separadas de la app.
+Implementación local con SvelteKit/TypeScript/Tailwind, BFF Node, API Elixir/Phoenix y PostgreSQL. Incluye acceso OIDC/PKCE, cookies opacas, tokens cifrados en servidor, autorización por propietario, cuotas atómicas, vencimiento y borrado. La autenticación se comprueba con un proveedor simulado y tokens RSA, sin crear usuarios reales ni enviar emails/SMS.
 
-## Cómo decide
+La ingesta de Phishing.Database valida snapshots y publica una versión atómica. El snapshot contrastado fue publicado el 2-oct: se trata como histórico y no como una comprobación vigente del día. El resultado muestra cobertura y fechas. Los adaptadores directos de IA están escritos; todavía no se han activado con mensajes reales.
 
-El veredicto combina señales verificables, no solo la opinión de un modelo:
+Dockerfiles y workflows de CI/GHCR están preparados. AWS/RDS/Cognito reales, Tunnel, publicación de imágenes y deploy aún requieren configuración y verificación. La [implementación](docs/architecture/implementation.md) distingue estas capacidades de la [arquitectura objetivo](docs/architecture/aws-deployment.md).
 
-| Señal | Fuente |
-|---|---|
-| El link menciona una marca peruana (BCP, Yape, SUNAT, Serpost…) pero no es su dominio oficial | Lista curada de dominios oficiales + detección de typosquatting y leetspeak |
-| Dominio recién creado | RDAP (`rdap.org`) |
-| Acortadores que esconden el destino | Se sigue la redirección (solo en acortadores) |
-| Dominio con letras de otros alfabetos | Punycode (`xn--`) |
-| Terminaciones baratas muy usadas en phishing | Lista de TLD |
-| Números extranjeros | Prefijo internacional |
-| Lenguaje típico de estafa: claves, urgencia, premios, paquete retenido, familiar con número nuevo, extorsión | Reglas de texto |
+## Desarrollo local
 
-## Desarrollo
+Requisitos: Node 24, Docker/Compose. Elixir y PostgreSQL se ejecutan en contenedores.
 
 ```bash
-npm install
-cp .dev.vars.example .dev.vars   # llaves locales, nunca se commitean
+npm ci
+cp .env.example .env
+
+docker compose -f compose.dev.yml up -d --build
+docker compose -f compose.dev.yml exec api-dev mix deps.get --check-locked
+docker compose -f compose.dev.yml exec api-dev mix ecto.setup
+node --env-file=.env scripts/migrate-web.mjs
+```
+
+`db:migrate:web` necesita WEB_DATABASE_URL en el entorno. Para usar el archivo local:
+
+```bash
+node --env-file=.env scripts/migrate-web.mjs
+```
+
+En terminales separadas:
+
+```bash
+docker compose -f compose.dev.yml exec api-dev mix phx.server
 npm run dev
-npm run check                    # tipos
-npm test                         # build + pruebas de regresión, sin requests externos
 ```
 
-## Arquitectura objetivo
+La consulta anónima funciona sin configurar Cognito ni IA. El registro aparece como pendiente hasta completar la configuración de identidad. La configuración local desactiva consultas de red por defecto; para probarlas conscientemente, pasar NETWORK_CHECKS=true al proceso de API. El historial nunca conserva el texto original.
 
-La [vista AWS propuesta](docs/diagrams/rendered/structurizr-AwsDeployment.svg) muestra EC2 con Nginx, SvelteKit/BFF y Phoenix, RDS PostgreSQL privado, Cognito, Cloudflare Tunnel y entrega mediante Actions/GHCR. Se genera desde [Structurizr DSL](docs/architecture/workspace.dsl); detalles y estado en [despliegue](docs/architecture/aws-deployment.md).
-
-## Despliegue del prototipo
-
-Worker de Cloudflare con assets estáticos (SvelteKit + `adapter-cloudflare`):
+## Comprobaciones
 
 ```bash
-npm run deploy
+npm run check
+npm test
+
+docker compose -f compose.dev.yml exec -e MIX_ENV=test api-dev mix ecto.setup
+docker compose -f compose.dev.yml exec -e MIX_ENV=test api-dev mix test
 ```
 
-## Limitaciones conocidas
+Las 43 regresiones TypeScript conservan el motor anterior como referencia. Phoenix añade pruebas de reglas, redirects restringidos, JWT, cuotas concurrentes, aislamiento, borrado e ingesta. No dependen de red externa.
 
-- Los dominios `.pe` no publican fecha de creación (ni RDAP ni WHOIS de NIC.pe), así que su antigüedad no se evalúa.
-- Solo se consultan acortadores conocidos por HTTPS. Al encontrar el destino final, se analiza su dominio sin visitarlo: un link de phishing puede identificar a la víctima.
-- Se analizan los dominios de todos los links, con consultas externas para los primeros cinco. Si quedan verificaciones pendientes o hay señales de riesgo, no se muestra un veredicto verde.
-- Las reglas reconocen algunas advertencias y negaciones explícitas; todavía no interpretan todo el contexto de un mensaje.
+La prueba completa de navegador requiere Python con Playwright y Google Chrome Dev, y puertos 4000/4173 libres. Usa una base E2E separada y claves efímeras, fuerza renovación/rotación de sesión y no llama a Cognito real:
+
+```bash
+python3 tests/e2e/run.py
+```
+
+Se puede indicar el Python con Playwright instalado mediante E2E_PYTHON. Los helpers de identidad de prueba están excluidos de las imágenes de producción.
+
+## Configuración de producción
+
+Web: API_BASE_URL, API_SERVICE_TOKEN, WEB_DATABASE_URL, DATABASE_CA_FILE, COGNITO_ISSUER/CLIENT_ID/DOMAIN y SESSION_ENCRYPTION_KEY de 32 bytes en base64. COGNITO_CLIENT_SECRET es opcional según el cliente. API: DATABASE_URL, DATABASE_CA_FILE, SECRET_KEY_BASE, API_SERVICE_TOKEN y los mismos issuer/client id. Ver plantillas de entorno y [decisiones implementadas](docs/architecture/implementation.md).
+
+Las URLs PostgreSQL no incluyen opciones SSL: se configura una CA explícita con verificación de hostname. Las credenciales de migración se separan de los roles de ejecución; el BFF sólo accede al esquema de sesiones. Ningún secreto entra en las imágenes.
+
+Producción usa RDS privado y EC2/Docker/Nginx/Cloudflare Tunnel según el [diagrama AWS](docs/diagrams/rendered/structurizr-AwsDeployment.svg). Compose, Nginx, roles y script operativo se centralizan en `../devops-agents/everyday-trust/`; recursos, permisos y evidencia en el runbook de ese repositorio. Los workflows públicos ejecutan CI y permiten publicar imágenes GHCR por SHA; el CD AWS con OIDC/SSM sigue pendiente de configurar.
+
+## Documentación
+
+[Negocio, VSM, UX, arquitectura y datos](docs/README.md), [implementación](docs/architecture/implementation.md), [fuentes e ingesta](docs/architecture/source-ingestion.md) e [identidad visual](docs/design/brand.md). Fuentes editables de diagramas en PlantUML y [Structurizr DSL](docs/architecture/workspace.dsl).
+
+Las consultas no autentican al remitente ni garantizan seguridad. Sólo se siguen acortadores permitidos y se detienen antes del destino final; una dependencia fallida o una fuente histórica no habilitan un resultado verde. El endpoint anterior POST /api/analyze está retirado y devuelve 410; el flujo actual usa /api/v1/cases.
+
+La API también publica métricas agregadas en `/api/v1/stats`, separando ejemplos de consultas. Ver [estado de implementación](docs/architecture/implementation.md).

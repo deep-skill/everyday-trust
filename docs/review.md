@@ -72,3 +72,9 @@ La [decisión de stack](architecture/stack-decision.md) registra esa aprobación
 ## Primer bloque de implementación tras la validación
 
 El primer corte debe entregar una consulta pública completa en la infraestructura acordada. Después incorpora acceso, guardado voluntario e historial mediante la misma API. El orden exacto y la convivencia con el prototipo se fijan al cerrar el stack; este documento no autoriza por sí solo commits, creación de repos públicos ni despliegues.
+
+## Respuesta a tercera revisión, 17-oct
+
+Se implementaron IP confiable en el BFF y Nginx, RDAP directo desde IANA, reserva de turnos sin mantener una conexión durante la IA, enum y prompt alineados, interpretación asíncrona con abstención al vencer, agregados B08 separados de demos, conservación del riesgo ante timeouts, cuotas conjuntas, redacción de códigos cortos, bloqueo Contributor en producción, configuración obligatoria y conservación de sesiones ante fallos transitorios. Cognito se aprovisiona con managed login v2 para permitir reautenticación explícita. Su comportamiento debe probarse contra AWS antes de declararlo validado.
+
+El feed importado localmente contiene 391.548 hosts distintos, publicado el 2-oct y descargado el 17-oct en Lima. Su evidencia es histórica y su cobertura parcial. La actualización sigue siendo una operación explícita y documentada, no se afirma que exista un job automático.

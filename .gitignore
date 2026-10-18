@@ -12,6 +12,12 @@ dist
 !.dev.vars.example
 .DS_Store
 .claude
+api/_build/
+api/deps/
+api/cover/
+api/erl_crash.dump
+playwright-report/
+test-results/
 
 # Local-only context and raw downloads (never published)
 .analisis/

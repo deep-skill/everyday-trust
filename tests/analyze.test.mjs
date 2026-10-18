@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { POST } from '../.svelte-kit/output/server/entries/endpoints/api/analyze/_server.ts.js';
+import { analyze as analyzeLegacy } from '../src/lib/server/analyze.ts';
 
 function mockNetwork(t, redirects = {}) {
 	const calls = [];
@@ -18,15 +18,7 @@ function mockNetwork(t, redirects = {}) {
 }
 
 async function analyze(text) {
-	const response = await POST({
-		request: new Request('https://checker.example/api/analyze', {
-			method: 'POST',
-			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ text })
-		})
-	});
-	assert.equal(response.status, 200);
-	return response.json();
+	return analyzeLegacy(text);
 }
 
 function signals(result) {

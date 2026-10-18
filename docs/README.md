@@ -1,6 +1,6 @@
 # Everyday Trust: producto y arquitectura
 
-Los documentos describen el producto objetivo y su diseño previo a la implementación. JP confirmó el stack el 17-oct-2026: SvelteKit, API Elixir/Phoenix, PostgreSQL, Cognito y BFF. JP eligió RDS PostgreSQL después de considerar alojarlo en EC2. Se conserva la distinción entre diseño, implementación y verificación en vivo.
+Los documentos describen el producto objetivo. La [implementación del primer corte](architecture/implementation.md) registra lo construido y las diferencias frente a las propuestas. JP confirmó el stack el 17-oct-2026: SvelteKit, API Elixir/Phoenix, PostgreSQL, Cognito y BFF. JP eligió RDS PostgreSQL después de considerar alojarlo en EC2. Se conserva la distinción entre diseño, implementación y verificación en vivo.
 
 ## Orden de lectura
 
@@ -36,7 +36,7 @@ Los wireframes están disponibles como [consulta](diagrams/rendered/wireframe-co
 | C4 lógico | Borrador modelado y validado con Structurizr |
 | Nombre y marca | Everyday Trust confirmado para el proyecto y `deep-skill/everyday-trust` para el repo. Web: ¿Es estafa? + «Revisa antes de responder»; identidad visual aprobada provisionalmente; pantallas para revisión |
 | IA | API directa; candidatos Muse Spark 1.3 Contributor y deepseek-flash, selección y privacidad por validar |
-| Implementación | Stack confirmado; migración y despliegue AWS aún sin ejecutar |
+| Implementación | API Phoenix, BFF, UI, sesiones e historial implementados localmente; AWS y servicios reales pendientes de configurar y verificar |
 
 ## Entrega del evento y arquitectura objetivo
 

@@ -1,6 +1,6 @@
 # Modelo lógico de datos y conservación
 
-Estado: modelo lógico sobre PostgreSQL confirmado. JP eligió RDS PostgreSQL para producción; falta implementar migraciones, permisos y comprobar conservación y recuperación.
+Estado: modelo lógico sobre PostgreSQL confirmado. JP eligió RDS PostgreSQL para producción; Las migraciones locales de casos, cuentas, cuotas, fuentes y sesiones están implementadas; permisos de producción y recuperación en RDS siguen pendientes. Ver [implementación](implementation.md).
 
 El modelo conserva resultados que la persona decide guardar y la procedencia de sus evidencias. Las contraseñas y la recuperación pertenecen a Cognito; la aplicación guarda su identificador estable, no una copia de la contraseña.
 
@@ -89,3 +89,7 @@ Eliminar un caso borra sus evidencias de forma atómica. Eliminar la cuenta requ
 ![Modelo lógico](../diagrams/rendered/data-model.svg)
 
 Fuente editable: [data-model.puml](../diagrams/data-model.puml).
+
+## Modelo implementado adicional
+
+`temporary_cases` incorpora `kind` (`query` o `demo`), `analysis_pending` y `analysis_deadline`. El resultado tiene revisión monotónica y estado de finalización. `daily_metrics(day, kind, metric, count)` usa clave compuesta y aumentos atómicos; no contiene texto, identidad ni IP. Las cuotas temporales permiten contar consultas adicionales y expiran a las 48 horas.

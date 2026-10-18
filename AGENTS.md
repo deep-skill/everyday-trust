@@ -9,7 +9,7 @@ Leer `.analisis/README.md` (local, ignorado por git): reglas del evento, fuentes
 ## Repo público
 
 - Este repo y su URL se publican en la galería del evento. Nunca commitear llaves, `.dev.vars`, datos de clientes de Deep Skill ni mensajes reales con datos personales de terceros.
-- En el prototipo, las llaves van en `.dev.vars` (local) y como secrets del Worker (`npx wrangler secret put NOMBRE`). Para AWS, seguir el diseño de secretos de `devops-agents`; nunca hornearlas en imágenes, user data, argumentos de build ni archivos versionados.
+- Las llaves locales van en `.env` ignorado. Para AWS, seguir el diseño de secretos de `devops-agents`; nunca hornearlas en imágenes, user data, argumentos de build ni archivos versionados.
 
 ## Stack
 
@@ -19,22 +19,25 @@ JP confirmó SvelteKit/TypeScript/Tailwind, API Elixir/Phoenix, PostgreSQL, Cogn
 
 La documentación operativa de AWS, Docker, Cloudflare, dominio, secretos, costos, backups y recursos se centraliza en `../devops-agents/docs/hack-the-andes-seguridad.md`; leer también las instrucciones de ese repositorio antes de tocar infraestructura. Respetar su preferencia de familia T3a. Registrar allí cada cambio y actualizar inventarios al crear recursos. El repo público conserva diseño reproducible, sin credenciales ni identificadores operativos privados.
 
-El borrador Better Auth/D1 está aislado en `wip/paused-cloudflare-auth`; no representa el stack aprobado. La propuesta física es EC2 con Docker Compose (Nginx, web/BFF, API y cloudflared), RDS privado, Cognito, GitHub Actions y GHCR; pendiente de implementar y comprobar. Las instrucciones Cloudflare siguientes describen el prototipo existente.
+El borrador Better Auth/D1 está aislado en `wip/paused-cloudflare-auth`; no integrarlo. La implementación actual es SvelteKit con adapter-node, BFF PostgreSQL y API Phoenix en `api/`. Leer `docs/architecture/implementation.md` para el estado comprobado y los límites. AWS todavía no está aprovisionado. Operación preparada en `../devops-agents/everyday-trust/`.
 
-- Svelte 5 + SvelteKit 2 + Tailwind 4, desplegado como Worker de Cloudflare con static assets (misma receta que `../coneimin-web`): `nodejs_compat` obligatorio y `routes` antes de cualquier `[tabla]` en `wrangler.toml`.
-- `src/lib/server/signals.ts`: señales verificables (links, números, texto). `src/lib/server/brands.ts`: dominios oficiales; solo entran dominios confirmados, porque un error marcaría phishing como legítimo.
-- `src/lib/server/analyze.ts`: puntaje, veredicto y consejos. `src/routes/api/analyze/+server.ts`: endpoint `POST { text }`.
+- Catálogo oficial activo en código: `api/priv/catalog/brands.json`; sólo añadir dominios confirmados y con fuente revisada. El motor anterior TypeScript queda como referencia de regresión.
+- `api/lib/everyday_trust/signals.ex`: extracción y comprobaciones. `analysis.ex`: política y evaluación. `interpreter.ex`: adaptadores acotados, deshabilitados hasta acordar condiciones y credenciales.
+- `cases.ex`, `accounts.ex`, `identity.ex`: casos, titulares, cuotas, borrado y JWT. El navegador nunca elige un owner id.
+- `src/lib/server/auth.ts`: OIDC/PKCE, cookies opacas y tokens cifrados. `src/routes/api/v1/[...path]/+server.ts`: BFF, nunca aceptar tokens del navegador como identidad propia de una cuenta.
+- La prueba E2E usa únicamente identidad simulada y una base local separada. Sus helpers están excluidos de los contextos Docker. Nunca habilitarlos en producción.
 
 ## Marca y UI
 
-JP confirmó **Everyday Trust** como nombre del proyecto público y autorizó publicar `deep-skill/everyday-trust`. Nombre de la web: **¿Es estafa?**. Bajada: **Revisa antes de responder**. La carpeta local conserva su nombre para no romper otras sesiones. Leer `docs/design/brand.md`. La propuesta visual y SVG están en `docs/design/`; son una revisión separada, con ejemplos sintéticos, sin cambiar aún `src/` ni conectar auth/IA. JP aprobó provisionalmente la identidad visual 0.1 (logo, paleta y tipografía). Las pantallas siguen para revisión; no inferir su aprobación ni la compra de dominio.
+JP confirmó **Everyday Trust** y el repo `deep-skill/everyday-trust`. La web conserva **¿Es estafa?** y **Revisa antes de responder**. La carpeta local mantiene su ruta. JP aprobó provisionalmente la identidad visual y después pidió implementar: la primera UI funcional está integrada usando esa propuesta como referencia. Esto no acredita una aprobación final de cada pantalla ni compra de dominio. Leer `docs/design/brand.md`; sus ejemplos HTML siguen separados de la app real.
 
 ## Comandos
 
 ```bash
 npm run dev      # local
 npm run check    # tipos (build no los verifica)
-npm run deploy   # build + wrangler deploy
+npm test         # build + regresiones del motor de referencia
+npm start        # servidor Node compilado; requiere env de ejecución
 ```
 
 ## Entrega (CLI del evento)

@@ -1,5 +1,5 @@
 import { parse } from 'tldts';
-import { BRANDS, SUSPICIOUS_TLDS, URL_SHORTENERS, type Brand } from './brands';
+import { BRANDS, SUSPICIOUS_TLDS, URL_SHORTENERS, type Brand } from './brands.ts';
 import type { PhoneFinding, Signal, UrlFinding } from '$lib/types';
 
 const URL_PATTERN = /(?<![\p{L}\p{N}_@/.\\-])(?:https?:\/\/[^\s<>"'`“”‘’]+|(?:(?:[\p{L}\p{N}-]+\.)+(?:[\p{L}]{2,}|xn--[a-z0-9-]+)|(?:\d{1,3}\.){3}\d{1,3}|\[[a-f0-9:]+\])[^\s<>"'`“”‘’]*)/giu;

@@ -10,6 +10,7 @@
 		"sourceMap": true,
 		"strict": true,
 		"moduleResolution": "bundler",
-		"types": ["@cloudflare/workers-types"]
+		"types": ["node"],
+		"allowImportingTsExtensions": true
 	}
 }

@@ -126,3 +126,35 @@ El MPFN cuenta denuncias. La ENAPRES del INEI (boletín feb-jul 2026, preliminar
 ### 15. La tabla de alcance del evento no tiene orden de corte
 
 La columna del evento tiene siete compromisos sin prioridad. Si el tiempo no alcanza, conviene saber de antemano qué se corta primero. Propuesta para que JP decida: P0 consulta anónima con evidencias, un feed e interpretación de IA; P1 cuenta e historial; P2 informe de evaluación completo y números con entrada dedicada.
+
+## Tercera revisión: código de la API y el BFF (17-oct, 20:20)
+
+Revisión de solo lectura del código sin commit (`api/`, BFF de SvelteKit, Dockerfiles, `compose.dev.yml` y workflows), contrastado con `docs/architecture/` y B01 a B08. Los hallazgos 1 y 2 se comprobaron además en vivo.
+
+### Alta
+
+1. **La cuota de red es global detrás de Nginx.** `src/routes/api/v1/[...path]/+server.ts:19` usa `getClientAddress()` y no hay `ADDRESS_HEADER` en `Dockerfile`, Compose ni config. Con adapter-node, eso devuelve la IP del socket, que en la topología documentada es Nginx: todos los visitantes comparten `x-network-id` y, tras 200 análisis diarios en todo el sitio, `POST /cases` responde 429 para todos. Arreglo: `ADDRESS_HEADER=cf-connecting-ip` en la web y que Nginx solo lo acepte desde el túnel.
+2. **La antigüedad de dominio nunca se obtiene.** `api/lib/everyday_trust/signals.ex:286` consulta `https://rdap.org/domain/...` con `redirect: false` (línea 306). rdap.org responde 302 hacia el RDAP del registro (comprobado: `rdap.org/domain/example.com` → 302 a `rdap.verisign.com`), así que `new_domain` y `recent_domain` no se emiten nunca. Los tests simulan un 200 directo. Arreglo: seguir 1 o 2 redirecciones solo por HTTPS a hosts RDAP, o resolver con el bootstrap de IANA en caché.
+
+### Media
+
+3. **LLM dentro de una transacción `FOR UPDATE`** (`cases.ex:214-230`, pool de 5 en `runtime.exs:11`): cinco seguimientos simultáneos retienen todas las conexiones hasta unos 7 s. Generar la respuesta fuera de la transacción y reservar el turno con un `UPDATE ... WHERE turns < 5 RETURNING`.
+4. **Catálogo `scam_type` desalineado** (`interpreter.ex:4-5`) con `ai-interpretation.md`, y el prompt no enumera los valores. Si el modelo responde un tipo no listado, se descarta toda la salida y el caso del familiar no sube a `suspicious`. Alinear, enumerar en el prompt y degradar un tipo inválido a `undetermined` sin perder el veredicto.
+5. **`POST /cases` espera al modelo** (`cases.ex:63`): hasta 4 s de red más unos 7 s del modelo, contra un corte de 12 s en el BFF (`+server.ts:37`), que devuelve 503 aunque Phoenix termine y cobre la cuota. Contradice la entrega por etapas: devolver primero las señales y enriquecer después.
+6. **B08 sin implementar:** no hay contadores de uso; el feedback vive en `temporary_cases` y la limpieza lo borra (`cases.ex:243`). Sin esto no hay evidencia de tracción desde el producto. Tabla de agregados diarios con upsert atómico.
+7. **Un timeout borra señales locales** (`analysis.ex:30-41`): el fallback devuelve `signals: []` y se pierden `brand_lookalike`, `punycode` y `url_userinfo`, que no dependen de red. Recalcular sin red ante el timeout.
+
+### Baja
+
+8. Interacción inválida devuelve 429 en vez de 400 (`cases.ex:212,236`); `request_id` siempre nulo por falta de `assign_as: :request_id` (`case_controller.ex:99`); los contadores de red y globales suben aunque la cuota de sesión rechace (`case_controller.ex:22-24`).
+9. El feed pasa a `stale` a las 48 h y la ingesta es manual (`threats.ex:41`): programarla o el jurado puede ver "no disponible".
+10. La minimización no tapa un código de 4 dígitos sin ":" ni "=" ("tu código es 4821") antes del modelo (`analysis.ex:137-140`).
+11. `AI_PROVIDER=meta` (modalidad que entrena con el contenido) se habilita en producción solo con `AI_DATA_APPROVED` (`interpreter.ex:147`); bloquearlo fuera de evaluación.
+12. `COGNITO_ISSUER` y `COGNITO_CLIENT_ID` son opcionales en la API (`runtime.exs:29`): si la web los tiene y la API no, todo usuario con sesión recibe 401. Falta `ORIGIN` en el `Dockerfile` de la web.
+13. Un fallo transitorio de Cognito al renovar borra la sesión (`src/lib/server/auth.ts:95-98`).
+14. `config/runtime.exs` y `lib/everyday_trust/release.ex` sin formatear: `mix format --check-formatted` fallaría en CI.
+15. Por verificar: el borrado de cuenta exige `auth_time` de menos de 5 min (`accounts.ex:18`); si Cognito reutiliza la sesión, puede quedar en 403.
+
+### Bien resuelto
+
+Titularidad en `get`, `save`, `history` y `delete` (un id ajeno da 404); guardado idempotente y borrado en cascada. Proxy del BFF con allowlist, cabeceras reconstruidas, cuerpo acotado y `no-store`. OIDC con state de un solo uso, PKCE S256, nonce, validación de iss, aud, `token_use` y RS256, rotación de sesión, tokens cifrados con AES-256-GCM y cookies `__Host-`. Sin SSRF: solo acortadores del catálogo por HTTPS y RDAP; el destino final nunca se visita. La IA nunca baja el veredicto, limita la elevación a `suspicious`, valida ids y cae a reglas ante cualquier fallo. No se guardan mensaje ni números. Imágenes por digest y sin root, actions por SHA con permisos mínimos y TLS verificado hacia RDS.

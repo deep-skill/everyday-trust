@@ -5,10 +5,11 @@
 </script>
 
 <svelte:head>
-	<title>¿Es estafa?</title>
+	<title>¿Es estafa? · Everyday Trust</title>
+	<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 	<meta
 		name="description"
-		content="Pega el mensaje, link o número que te llegó y descubre si es una estafa."
+		content="Revisa las señales de un mensaje sospechoso y encuentra tu siguiente paso, con contexto peruano."
 	/>
 </svelte:head>
 

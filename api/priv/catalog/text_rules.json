@@ -1,0 +1,50 @@
+[
+  {
+    "id": "asks_credentials",
+    "severity": "high",
+    "pattern": "\\b(clave|contrase[ñn]a|token|c[oó]digo (de )?(verificaci[oó]n|seguridad|sms)|cvv|pin)\\b",
+    "message": "Te pide claves o códigos. Ningún banco ni empresa los pide por mensaje."
+  },
+  {
+    "id": "extortion",
+    "severity": "high",
+    "pattern": "(si no (pagas|depositas|colaboras)|te estamos vigilando|sabemos d[oó]nde (vives|trabajas)|cupo|colaboraci[oó]n mensual)",
+    "message": "El mensaje tiene lenguaje de extorsión."
+  },
+  {
+    "id": "family_impersonation",
+    "severity": "medium",
+    "pattern": "(cambi[eé] de n[uú]mero|este es mi nuevo n[uú]mero|soy tu (hij[oa]|mam[aá]|pap[aá]|t[ií][oa]))",
+    "message": "Alguien dice ser un familiar con número nuevo. Llama al número que ya tenías antes de enviar dinero."
+  },
+  {
+    "id": "asks_money",
+    "severity": "medium",
+    "pattern": "\\b(yap[eé]a(me|s)?|yapees|plin[eé]a(me|s)?|deposita(me)?|transfi[eé]re(me)?|env[ií]a(me)? (la plata|el dinero|s\\/))",
+    "message": "Te pide que envíes dinero."
+  },
+  {
+    "id": "urgency",
+    "severity": "medium",
+    "pattern": "(urgente|inmediatamente|hoy mismo|en las pr[oó]ximas? \\d+ horas|ser[aá] (bloquead|suspendid)|ha sido (bloquead|suspendid)|vence hoy)",
+    "message": "Te apura para que actúes sin pensar."
+  },
+  {
+    "id": "prize_or_refund",
+    "severity": "medium",
+    "pattern": "(ganaste|ganador|has sido seleccionad|premio|sorteo|reembolso|devoluci[oó]n de impuestos|bono del estado)",
+    "message": "Promete un premio, bono o devolución que no pediste."
+  },
+  {
+    "id": "easy_job",
+    "severity": "medium",
+    "pattern": "(trabajo desde casa|dar likes?|ganar? (dinero|hasta)|comisi[oó]n diaria|tareas simples|medio tiempo)",
+    "message": "Ofrece trabajo fácil y bien pagado, un gancho típico para pedirte dinero después."
+  },
+  {
+    "id": "package_held",
+    "severity": "medium",
+    "pattern": "(paquete|env[ií]o|encomienda).{0,40}(retenido|pendiente|no (pudo|ha podido) ser entregado|direcci[oó]n incompleta)",
+    "message": "Avisa de un paquete retenido: el gancho más común para robar datos de tarjeta."
+  }
+]

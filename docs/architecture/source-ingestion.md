@@ -1,6 +1,6 @@
 # Catálogos peruanos e ingesta de fuentes
 
-Estado: diseño lógico para validar. La existencia de una descarga o investigación local no significa que esté integrada en la API. Los términos de acceso, redistribución y uso comercial deben verificarse para cada fuente antes de habilitarla.
+Estado: diseño objetivo y primer importador implementado en Phoenix. Ver [implementación](implementation.md) para las reglas concretas de publicación y caducidad. La existencia de una descarga o investigación local no significa que esté integrada en la API. Los términos de acceso, redistribución y uso comercial deben verificarse para cada fuente antes de habilitarla.
 
 ## Fuentes y situación actual
 
@@ -53,3 +53,9 @@ Un número extranjero por sí solo no demuestra fraude. No se identifica al titu
 Un indicador de amenaza expresa el reporte de una fuente y su fecha. `first_seen` es la primera observación en esa fuente, no necesariamente el registro del dominio o el inicio del fraude. Una similitud con un nombre de un aviso SBS no basta para identificar una entidad; se presenta la limitación y el comunicado, sin convertirla en una acusación.
 
 El [modelo de datos](data-model.md) separa estas entidades y su procedencia. El catálogo de acciones usa sólo canales y políticas curados; el modelo de IA no inventa teléfonos, enlaces de bloqueo ni instrucciones bancarias.
+
+## Snapshot contrastado durante la implementación
+
+La descarga íntegra del 17-oct coincide con el SHA anterior y el blob Git `067505dbc834384b48c3cd9e62114ad9c86ce6cd`, commit `12a20bf8dd2b7e78d9d38fc12b3e5c970f79d1a7`. Su publicación es del 2-oct-2026, no del día de descarga. El importador distingue ambas fechas y trata esta versión como histórica, con cobertura parcial y peso medio de sus reportes. La descarga reciente no renueva su publicación.
+
+El archivo también incluye IPv4: se normalizan como hosts reportados sin visitarlos. La coincidencia es exacta; los conflictos con dominios oficiales exigen revisión. La ausencia de un host en esta versión histórica no habilita verde. El dataset crudo permanece ignorado y no se publica con el repositorio.

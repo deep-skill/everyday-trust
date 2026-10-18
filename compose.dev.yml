@@ -1,0 +1,32 @@
+name: everyday-trust-dev
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: local-development-only
+      POSTGRES_DB: everyday_trust_dev
+    ports: ["127.0.0.1:54329:5432"]
+    volumes: ["postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+  api-dev:
+    image: everyday-trust-api-dev:local
+    build: { context: api, target: development }
+    working_dir: /app
+    command: ["sleep", "infinity"]
+    ports: ["127.0.0.1:4000:4000"]
+    volumes: ["./api:/app", "mix:/root/.mix", "hex:/root/.hex"]
+    environment:
+      ERL_FLAGS: "+S 2:2"
+      NETWORK_CHECKS: "false"
+    depends_on:
+      db: { condition: service_healthy }
+    restart: unless-stopped
+volumes:
+  postgres:
+  mix:
+  hex:
