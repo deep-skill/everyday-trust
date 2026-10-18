@@ -1,6 +1,6 @@
 # Implementación del primer corte
 
-Estado: implementación y despliegue AWS público, 17-oct-2026. Web: [verifica.deepskill.space](https://verifica.deepskill.space), servida mediante Cloudflare Tunnel sin puertos entrantes en EC2. La API es Phoenix 1.8.15 sobre Elixir 1.18.4/OTP 27; la web usa SvelteKit y adapter-node. PostgreSQL local sirve para desarrollo y pruebas; producción usa RDS privado.
+Estado: implementación y despliegue AWS público, 18-oct-2026, con Contributor activo para el piloto autorizado. Web: [verifica.deepskill.space](https://verifica.deepskill.space), servida mediante Cloudflare Tunnel sin puertos entrantes en EC2. La API es Phoenix 1.8.15 sobre Elixir 1.18.4/OTP 27; la web usa SvelteKit y adapter-node. PostgreSQL local sirve para desarrollo y pruebas; producción usa RDS privado. Los apartados finales registran los cortes sucesivos y la activación vigente.
 
 ## Recorrido implementado
 
@@ -34,7 +34,7 @@ El snapshot inspeccionado corresponde al commit público `12a20bf8dd2b7e78d9d38f
 
 ## Integraciones y comprobación
 
-Los adaptadores directos de DeepSeek Flash y Muse Spark Contributor están escritos, con validación de salida y fallback por señales. JP entregó una llave Meta y pidió Contributor; se comprobó con ejemplos ficticios. JP confirmó Contributor para el evento. JP pidió posteriormente contexto completo para las pruebas internas: mensaje original y resultado íntegro de comprobaciones; preguntas completas con el resultado disponible. Se retiró la reducción a códigos. Las acciones tras clic/datos/pago siguen locales; otras preguntas usan clasificación de intención. La credencial está cifrada y la IA pública sigue desactivada hasta desplegar este corte. No se realizaron llamadas con mensajes reales. La orientación sin IA usa intenciones y acciones cerradas y lo indica en el resultado.
+Los adaptadores directos de DeepSeek Flash y Muse Spark Contributor están escritos, con validación de salida y fallback por señales. JP entregó una llave Meta y pidió Contributor; se comprobó con ejemplos ficticios. JP confirmó Contributor para el evento. JP pidió posteriormente contexto completo: mensaje original y resultado íntegro de comprobaciones; preguntas completas con el resultado disponible. Se retiró la reducción a códigos. Las acciones tras clic/datos/pago siguen locales; otras preguntas usan clasificación de intención. La credencial está cifrada y JP autorizó expresamente la activación en la URL pública sin login, comprobada el18-oct. Las comprobaciones del equipo usan datos ficticios. La orientación sin IA usa intenciones y acciones cerradas y lo indica en el resultado.
 
 Las regresiones originales del motor de referencia y las pruebas Phoenix se ejecutan sin red externa. La suite de navegador usa la web compilada, PostgreSQL y JWT RSA de un proveedor simulado que fuerza renovación y rotación. No equivale a una prueba de Cognito real ni envía emails/SMS. Sus helpers sólo se cargan expresamente y se excluyen de las imágenes de producción.
 
@@ -50,7 +50,7 @@ RDAP utiliza el bootstrap IANA versionado en `api/priv/catalog/rdap-bootstrap.js
 
 `daily_metrics` conserva conteos agregados por día UTC y distingue consultas y demostraciones. Registra finalizaciones, consultas adicionales en una sesión o cuenta, opiniones y errores de solicitudes recibidas por el controlador de creación. No mide personas únicas ni todos los errores de la infraestructura. Las opiniones agregadas sobreviven a la limpieza del caso temporal. Los ejemplos de la interfaz se reconocen en servidor y quedan separados de la tracción. `GET /api/v1/stats` expone sólo estos agregados.
 
-El contenedor web exige configuración de identidad, origen HTTPS, cifrado y CA de RDS antes de arrancar. Phoenix exige la misma identidad y, para Meta, `AI_INPUT_MODE=full_context` para el piloto interno de hackathon. Un fallo transitorio de renovación conserva la sesión y devuelve indisponibilidad, sin convertirla silenciosamente en anónima.
+El contenedor web exige configuración de identidad, origen HTTPS, cifrado y CA de RDS antes de arrancar. Phoenix exige la misma identidad y, para Meta, `AI_INPUT_MODE=full_context` para el piloto de hackathon. Un fallo transitorio de renovación conserva la sesión y devuelve indisponibilidad, sin convertirla silenciosamente en anónima.
 
 AWS está aprovisionado y el despliegue pasó por GitHub Actions con OIDC y SSM. Cognito usa Essentials, rotación de refresh tokens y managed login v2. El primer stack vacío falló por incompatibilidad entre Lite y rotación, se verificó que no tenía usuarios y se eliminó antes de recrearlo. Cloudflare Tunnel ya proporciona la entrada pública. El recorrido OIDC completo en navegador contra AWS sigue pendiente. Doce comprobaciones privadas con dos identidades Cognito reales y RDS verificaron JWT, aislamiento, guardado, feedback, borrado de consultas y eliminación de ambos usuarios en Cognito, sin emails/SMS.
 
@@ -70,7 +70,7 @@ El 17-oct se creó un Tunnel administrado y su DNS proxied exclusivo para el hos
 
 HTTPS respondió 200 con CSP, HSTS y `Cache-Control: no-store`; HTTP redirige a HTTPS con 308 sólo en el hostname del proyecto. La consulta sintética devolvió 201 y veredicto inconcluso; una escritura desde otro origen fue rechazada con 403. Chrome mostró la consulta de ejemplo bancaria como alto riesgo y cargó el managed login de Cognito. En una ventana privada, el ejemplo familiar devolvió sospechoso y recomendó llamar al número previamente guardado. `/auth/login` devolvió 303 con PKCE S256, state y cookie Secure. Los ejemplos se contabilizan como demostraciones, sin incrementar consultas reales.
 
-Pendientes de integración: recorrido OIDC completo en navegador público y publicación del piloto Contributor de contexto completo. La IA pública sigue deshabilitada. Restauración de backups pendiente de ejercicio.
+Pendientes de integración: recorrido OIDC completo en navegador público y ejercicio de restauración de backups. El piloto Contributor de contexto completo quedó publicado y activado posteriormente, según el registro al final.
 
 ## Refinamiento local tras pruebas de uso
 
@@ -106,3 +106,11 @@ Prueba del contexto completo desde Chrome: /como-funciona → ejemplo bancario �
 El corte de UI, guía separada, comprobación de sitios y adaptador de contexto completo se publicó y desplegó mediante [CI](https://github.com/deep-skill/everyday-trust/actions/runs/39098407864), [imágenes GHCR](https://github.com/deep-skill/everyday-trust/actions/runs/39098426362) y [deploy AWS](https://github.com/deep-skill/everyday-trust/actions/runs/39098550194), todos correctos. La imagen ejecutada corresponde a39b20a1cb07233fc99d80df871e7de0adde739de. Los cambios posteriores de documentación no requieren reconstruir esa imagen.
 
 La verificación pública acreditó HTTPS200 con CSP/HSTS/no-store, HTTP308, guía200 sin ejemplos en el home, PKCE303, escritura desde otro origen403, ejemplo bancario de alto riesgo y raíz oficial completada. Sólo ejemplos ficticios, marcados como demostraciones. La IA permaneció desactivada; su activación general en esta URL pública queda pendiente de definir el alcance del piloto. Secretos, flags, digests y evidencia operativa en devops-agents. No se acredita con esto el recorrido OIDC completo de cuenta ni restore.
+
+## Activación del piloto público, 18-oct
+
+JP autorizó expresamente habilitar Muse Spark Contributor en la URL pública sin login y enviar el contexto completo. Se conservaron las credenciales y las imágenes de aplicación39b20a1. El [despliegue de activación](https://github.com/deep-skill/everyday-trust/actions/runs/39100734515) terminó correctamente. La comprobación pública con ejemplos ficticios acreditó IA completada, alto riesgo bancario conservado y raíz oficial completada, además de HTTPS, guía, PKCE y rechazo de escrituras desde otro origen. El chequeo privado de arranque ahora tiene intentos acotados para tolerar la recreación de la API; no añade reintentos al proveedor de IA.
+
+Una repetición posterior completó la IA del caso bancario, pero no la del enlace oficial, y el chequeo estricto falló. La activación no garantiza disponibilidad del proveedor; la aplicación conserva las señales y declara cobertura incompleta cuando la IA falla. No se amplió el plazo ni se añadieron llamadas automáticas para ocultar ese resultado.
+
+Por solicitud de JP, se detuvo el entorno local y se cerró Docker Desktop. Se eliminaron dependencias, compilaciones y caché regenerables, conservando fuentes, credenciales y volúmenes de datos. La aplicación AWS continúa operativa; para retomar desarrollo local se reinstalan dependencias y se levanta Compose según el README. El detalle de limpieza queda en devops-agents.

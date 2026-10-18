@@ -35,7 +35,7 @@ Los wireframes están disponibles como [consulta](diagrams/rendered/wireframe-co
 | Modelo físico y despliegue | EC2 + Compose + Nginx, RDS privado y Cognito desplegados; Actions/GHCR/OIDC/SSM y Tunnel público verificados |
 | C4 lógico | Borrador modelado y validado con Structurizr |
 | Nombre y marca | Everyday Trust confirmado para el proyecto y `deep-skill/everyday-trust` para el repo. Web: ¿Es estafa? + «Revisa antes de responder»; identidad visual aprobada provisionalmente; pantallas para revisión |
-| IA | Contributor con mensaje completo y evidencia para pruebas internas de hackathon, autorizado por JP. Cambiar modelo/modalidad antes del lanzamiento general; Corte desplegado; AWS mantiene IA desactivada mientras se define el alcance del piloto público |
+| IA | Contributor con mensaje completo y evidencia, activo en la URL pública del piloto de hackathon por autorización expresa de JP. Verificado con ejemplos ficticios; revisar modelo/modalidad antes de la difusión general |
 | Implementación | API, BFF, UI, sesiones e historial implementados. Consulta pública verificada y 12 comprobaciones de identidad/propiedad/borrado con Cognito real; OIDC completo en navegador AWS pendiente |
 
 ## Entrega del evento y arquitectura objetivo
@@ -45,7 +45,7 @@ La web está disponible en [verifica.deepskill.space](https://verifica.deepskill
 | Entrega propuesta para el evento | Arquitectura objetivo | Fuera del primer corte o pendiente, con motivo |
 |---|---|---|
 | P0: consulta anónima de texto/enlaces, evidencias y siguiente acción | Web pública y API separada sobre AWS | Desplegado y consulta anónima pública comprobada |
-| P0: explicación y seguimiento acotado, con piso de reglas | Intérprete con contrato, presupuesto y evaluación | Contributor en preview con mensaje completo, señales, dominios y cobertura; salida estructurada, fallback y piso de reglas. Comparación de calidad/costo pendiente |
+| P0: explicación y seguimiento acotado, con piso de reglas | Intérprete con contrato, presupuesto y evaluación | Contributor desplegado con mensaje completo, señales, dominios y cobertura; salida estructurada, fallback y piso de reglas. Comparación de calidad/costo pendiente |
 | P1: cuenta, mayor uso, guardado voluntario e historial, solicitados por JP | Identidad gestionada y acceso por propietario | Implementado y probado con Cognito/RDS reales; recorrido OIDC completo de navegador pendiente |
 | P0: dominios oficiales con procedencia y un feed integrado y probado | Catálogos versionados e ingesta de varias fuentes | 391.548 hosts de Phishing.Database cargados en RDS; snapshot histórico del 2-oct y cobertura parcial. SBS y canales no se anuncian integrados |
 | P0: evaluación mínima reproducible y métricas sin texto | Evaluador local/CI e informe ampliado P2 | Calidad y costos aún no medidos; el informe completo puede ampliarse después, las comprobaciones mínimas no se difieren |

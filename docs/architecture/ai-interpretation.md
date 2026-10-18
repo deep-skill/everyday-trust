@@ -1,6 +1,6 @@
 # Contrato del intérprete de IA
 
-Estado al17-oct-2026: JP confirmó `muse-spark-1.3-contributor` y pidió enviar el mensaje completo y todas las comprobaciones durante las pruebas internas de hackathon. Esta decisión reemplaza la restricción anterior a códigos de señales. Antes de abrir al público general se cambiará el modelo/modalidad. El corte está publicado y desplegado; AWS conserva IA desactivada mientras se define el alcance del piloto público; la llave permanece fuera de Git y cifrada en runtime.
+Estado al18-oct-2026: JP confirmó `muse-spark-1.3-contributor`, pidió enviar el mensaje completo y todas las comprobaciones y autorizó expresamente activarlo en la URL pública sin login durante el piloto de hackathon. Esta decisión reemplaza la restricción anterior a códigos de señales. Antes de la difusión general se revisará el modelo/modalidad. La IA está activa en AWS y comprobada con ejemplos ficticios; la llave permanece fuera de Git y cifrada en runtime.
 
 El modelo interpreta el lenguaje y los hechos disponibles. La aplicación conserva la decisión final, las explicaciones revisadas y los siguientes pasos. Una salida válida no prueba fraude ni demuestra vulnerabilidades.
 
@@ -59,9 +59,9 @@ Timeout, presupuesto agotado, rechazo, JSON inválido o caída del proveedor con
 
 ## Decisión y configuración
 
-JP indicó expresamente que las próximas pruebas son internas de hackathon y autorizó el contexto completo. La modalidad Contributor permite entrenamiento y sus condiciones restringen datos personales, sensibles o confidenciales. El piloto se evalúa con mensajes ficticios; la autorización de JP no cambia las condiciones del proveedor. Antes del lanzamiento general se sustituirá modelo/modalidad. Referencias: [condiciones Meta](https://dev.meta.ai/legal/terms-of-service) y [modelos](https://dev.meta.ai/docs/models).
+JP autorizó el contexto completo y posteriormente confirmó de forma expresa su activación en el sitio público sin login. La modalidad Contributor permite entrenamiento y sus condiciones restringen datos personales, sensibles o confidenciales. Las comprobaciones del equipo usan mensajes ficticios; la autorización de JP no cambia las condiciones del proveedor. Antes de la difusión general se revisará modelo/modalidad. Referencias: [condiciones Meta](https://dev.meta.ai/legal/terms-of-service) y [modelos](https://dev.meta.ai/docs/models).
 
-El arranque de producción requiere `AI_PROVIDER=meta`, `AI_DATA_APPROVED=true`, `AI_INPUT_MODE=full_context` y `MODEL_API_KEY`. Se debe publicar primero la imagen compatible y actualizar sólo esos campos del runtime, sin regenerar secretos. La versión pública anterior bloquea Meta. Runbook canónico en `devops-agents`; código desplegado, activación en AWS pendiente.
+El arranque de producción requiere `AI_PROVIDER=meta`, `AI_DATA_APPROVED=true`, `AI_INPUT_MODE=full_context` y `MODEL_API_KEY`. Se debe publicar primero la imagen compatible y actualizar sólo esos campos del runtime, sin regenerar secretos. Las imágenes anteriores al adaptador compatible bloquean Meta. Runbook canónico en `devops-agents`; activación comprobada en AWS.
 
 Muse Spark admite entrada multimodal, pero esta app sólo integra texto y enlaces. No se anuncia recepción de capturas, lectura de HTML o ejecución de JavaScript. Referencias: [audio y vídeo](https://dev.meta.ai/docs/video-understanding), [razonamiento](https://dev.meta.ai/docs/reasoning).
 

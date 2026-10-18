@@ -108,7 +108,7 @@ hide stereotype
 person "==Operador\n<size:16>[Person]</size>\n\nMantiene fuentes, costos y funcionamiento sin leer mensajes en logs." <<Element-RWxlbWVudCxQZXJzb24=>> as Operador
 
 rectangle "==Servicio de identidad\n<size:16>[Software System]</size>\n\nRegistro, confirmación, recuperación y acceso con Amazon Cognito." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Serviciodeidentidad
-rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nMuse Spark 1.3 Contributor con mensaje completo y evidencia; piloto interno, activación pública pendiente." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as ProveedordeIA
+rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nMuse Spark 1.3 Contributor con mensaje completo y evidencia; activo en la URL pública del piloto autorizado." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as ProveedordeIA
 rectangle "==Sitios consultados\n<size:16>[Software System]</size>\n\nRaíz pública mediante HEAD, DNS/IP fijados, redirecciones limitadas; sin HTML ni JavaScript." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Sitiosconsultados
 rectangle "==Fuentes verificables\n<size:16>[Software System]</size>\n\nDominios oficiales, Phishing.Database y RDAP; otras fuentes por integrar." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Fuentesverificables
 
@@ -119,7 +119,7 @@ rectangle "Verificador de mensajes\n<size:16>[Software System]</size>" <<Boundar
     rectangle "==Señales verificables\n<size:16>[Component: Módulo de aplicación]</size>\n\nComprueba dominios, fuentes y raíces públicas con red restringida." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Señalesverificables
     rectangle "==Minimización de datos\n<size:16>[Component: Módulo de aplicación]</size>\n\nPrepara contexto permitido antes del modelo, estado temporal y guardado; valida también las salidas." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Minimizacióndedatos
     rectangle "==Política de riesgo\n<size:16>[Component: Módulo de aplicación]</size>\n\nConserva el piso de reglas; limita a sospechoso una elevación sólo por interpretación." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Políticaderiesgo
-    rectangle "==Interpretación y seguimiento\n<size:16>[Component: Adaptador de IA]</size>\n\nContributor recibe mensaje completo y evidencia del piloto interno; salidas e intenciones validadas." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Interpretaciónyseguimiento
+    rectangle "==Interpretación y seguimiento\n<size:16>[Component: Adaptador de IA]</size>\n\nContributor recibe mensaje completo y evidencia del piloto; salidas e intenciones validadas." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Interpretaciónyseguimiento
     rectangle "==Historial\n<size:16>[Component: Módulo de aplicación]</size>\n\nGuarda resúmenes saneados y controla lectura y borrado por propietario." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Historial
     rectangle "==Ingesta de fuentes\n<size:16>[Component: Comando operativo; snapshots atómicos]</size>\n\nValida snapshots; revisa dominios, canales y políticas oficiales antes de publicar." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Ingestadefuentes
   }

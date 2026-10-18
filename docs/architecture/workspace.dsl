@@ -1,9 +1,9 @@
-workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contributor de contexto completo para piloto interno en el corte local" {
+workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contributor de contexto completo activos para el piloto de hackathon" {
     model {
         visitor = person "Persona que consulta" "Evalúa un mensaje y decide su siguiente acción, con o sin cuenta."
         operator = person "Operador" "Mantiene fuentes, costos y funcionamiento sin leer mensajes en logs."
         identity = softwareSystem "Servicio de identidad" "Registro, confirmación, recuperación y acceso con Amazon Cognito."
-        intelligence = softwareSystem "Proveedor de IA" "Muse Spark 1.3 Contributor con mensaje completo y evidencia; piloto interno, activación pública pendiente."
+        intelligence = softwareSystem "Proveedor de IA" "Muse Spark 1.3 Contributor con mensaje completo y evidencia; activo en la URL pública del piloto autorizado."
         sites = softwareSystem "Sitios consultados" "Raíz pública mediante HEAD, DNS/IP fijados, redirecciones limitadas; sin HTML ni JavaScript."
         sources = softwareSystem "Fuentes verificables" "Dominios oficiales, Phishing.Database y RDAP; otras fuentes por integrar."
 
@@ -15,7 +15,7 @@ workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contri
                 signals = component "Señales verificables" "Comprueba dominios, fuentes y raíces públicas con red restringida." "Módulo de aplicación"
                 privacy = component "Minimización de datos" "Prepara contexto permitido antes del modelo, estado temporal y guardado; valida también las salidas." "Módulo de aplicación"
                 policy = component "Política de riesgo" "Conserva el piso de reglas; limita a sospechoso una elevación sólo por interpretación." "Módulo de aplicación"
-                conversation = component "Interpretación y seguimiento" "Contributor recibe mensaje completo y evidencia del piloto interno; salidas e intenciones validadas." "Adaptador de IA"
+                conversation = component "Interpretación y seguimiento" "Contributor recibe mensaje completo y evidencia del piloto; salidas e intenciones validadas." "Adaptador de IA"
                 history = component "Historial" "Guarda resúmenes saneados y controla lectura y borrado por propietario." "Módulo de aplicación"
                 ingestion = component "Ingesta de fuentes" "Valida snapshots; revisa dominios, canales y políticas oficiales antes de publicar." "Comando operativo; snapshots atómicos"
             }
@@ -97,7 +97,7 @@ workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contri
                 artifacts = infrastructureNode "S3 privado" "Artefactos versionados y snapshots de fuentes permitidas." "Amazon S3"
                 oidc = infrastructureNode "IAM / OIDC" "Confianza restringida a repo y rama o environment." "AWS IAM"
             }
-            deploymentNode "API externa de IA" "Contributor del piloto interno; desactivado en AWS; activación del piloto pendiente." "HTTPS" {
+            deploymentNode "API externa de IA" "Contributor activo en AWS para el piloto de hackathon; verificado con ejemplos ficticios." "HTTPS" {
                 softwareSystemInstance intelligence
             }
             ci -> registry "Publica imágenes por SHA/digest" "HTTPS"
