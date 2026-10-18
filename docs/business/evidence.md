@@ -1,6 +1,6 @@
 # Evidencia del problema y alcance de las cifras
 
-Estado: cálculo MPFN reproducido y boletín INEI contrastado el 17 de octubre de 2026. No miden demanda del producto ni casos exclusivamente bancarios.
+Estado: cálculo MPFN reproducido y boletín INEI contrastado el 17 de octubre de 2026; fuente regional Kaspersky contrastada el 18 de octubre de 2026. No miden demanda del producto ni casos exclusivamente bancarios.
 
 El [conjunto del Ministerio Público en la Plataforma Nacional de Datos Abiertos](https://www.datosabiertos.gob.pe/dataset/delitos-inform%C3%A1ticos-denunciados-ante-el-ministerio-p%C3%BAblico-mpfn) publica cantidades por tipo de delito y distrito fiscal, bajo la Ley de Delitos Informáticos. La copia analizada contiene 250 filas agregadas para enero a diciembre de 2025.
 
@@ -30,6 +30,14 @@ El [boletín de seguridad ciudadana, febrero a julio de 2026](https://www.inei.g
 El semestre móvil agrupa entrevistas; la pregunta de victimización se refiere a los últimos doce meses. No describir el dato como hechos ocurridos exclusivamente entre febrero y julio. La categoría incluye fraude bancario, suplantación, ciberacoso y otras modalidades; no es una tasa específica de phishing o estafas de Yape.
 
 Es una estimación de encuesta sobre personas, distinta del registro administrativo del MPFN. No se suman ni se convierten en una cantidad de víctimas únicas del producto. Se verificaron la tabla y sus notas en el PDF, además de la definición temporal de su presentación y glosario.
+
+## Escala regional: intentos de phishing en Latinoamérica
+
+El [comunicado oficial de Kaspersky del 10 de septiembre de 2025](https://latam.kaspersky.com/about/press-releases/ataques-con-mensajes-falsos-aumentan-85-en-america-latina-mas-de-12-mil-millones-de-casos-detectados-kaspersky) presenta el Panorama de Amenazas 2025: **1.291 millones de intentos de phishing bloqueados** en América Latina durante los últimos doce meses del informe, un 85% más que en el ciclo anterior 2023/2024. La cifra corresponde a bloqueos observados por ese proveedor, no a personas afectadas, pérdidas monetarias ni una estimación de todos los ataques de la región.
+
+El comunicado no precisa los meses inicial y final de esa ventana. Por eso la presentación dice «Panorama 2025 · últimos 12 meses del informe», sin atribuir el total a enero-diciembre de 2025 ni a 2026. La cobertura se denomina Latinoamérica, no países hispanohablantes: no se excluye Brasil ni se inventa un subtotal por idioma. No extrapolar a la población ni sumar esta telemetría a denuncias administrativas del Perú.
+
+La portada combina una cifra regional de intentos bloqueados y una local de fraude denunciado, con fuente, unidad y periodo separados. Se retiró el texto metodológico extenso de la vista del slide por decisión de JP; permanece en las notas del presentador y en este documento. El dato local de 10.559 registros de suplantación sigue disponible arriba, aunque ya no ocupa un bloque en la portada.
 
 ## Uso en negocio y presentación
 
