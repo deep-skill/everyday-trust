@@ -5,6 +5,10 @@ defmodule EverydayTrust.Application do
     children = [
       EverydayTrust.Repo,
       {Task.Supervisor, name: EverydayTrust.AnalysisTasks, max_children: 20},
+      Supervisor.child_spec(
+        {Task.Supervisor, name: EverydayTrust.ImageTasks, max_children: 4},
+        id: EverydayTrust.ImageTasks
+      ),
       EverydayTrust.SafeBrowsing,
       EverydayTrust.SourceDisplay,
       EverydayTrust.Urlscan.Cache,

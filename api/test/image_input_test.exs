@@ -179,6 +179,40 @@ defmodule EverydayTrust.ImageInputTest do
     assert {:error, :provider_unavailable} = ImageInput.extract(image)
   end
 
+  test "OCR saturation makes no provider call and recovers after capacity is released" do
+    parent = self()
+
+    Application.put_env(:everyday_trust, :test_image_request, fn _, _ ->
+      send(parent, :ocr_called)
+      provider_response(%{text: "Mensaje sintético", no_text: false})
+    end)
+
+    blockers =
+      for _ <- 1..4 do
+        {:ok, pid} =
+          Task.Supervisor.start_child(EverydayTrust.ImageTasks, fn ->
+            receive do
+              :stop -> :ok
+            end
+          end)
+
+        pid
+      end
+
+    on_exit(fn ->
+      Enum.each(blockers, fn pid ->
+        if Process.alive?(pid), do: Task.Supervisor.terminate_child(EverydayTrust.ImageTasks, pid)
+      end)
+    end)
+
+    {:ok, image} = ImageInput.validate(data_url("image/png", png(1, 1)))
+    assert {:error, :provider_unavailable} = ImageInput.extract(image)
+    refute_received :ocr_called
+    Enum.each(blockers, &Task.Supervisor.terminate_child(EverydayTrust.ImageTasks, &1))
+    assert {:ok, %{text: "Mensaje sintético"}} = ImageInput.extract(image)
+    assert_received :ocr_called
+  end
+
   defp data_url(mime, binary), do: "data:#{mime};base64," <> Base.encode64(binary)
 
   defp png(width, height, extra \\ <<>>) do

@@ -252,7 +252,8 @@ defmodule EverydayTrust.ImageInput do
     if byte_size(Jason.encode!(body)) > @max_body do
       {:error, :too_large}
     else
-      task = Task.async(fn -> model_post(body, key) end)
+      task =
+        Task.Supervisor.async_nolink(EverydayTrust.ImageTasks, fn -> model_post(body, key) end)
 
       case Task.yield(task, @deadline) || Task.shutdown(task, :brutal_kill) do
         {:ok, {:ok, result}} -> {:ok, result}

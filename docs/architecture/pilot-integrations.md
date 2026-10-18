@@ -60,7 +60,7 @@ El navegador reduce la imagen a un máximo de 1.280 px por lado y la vuelve a co
 
 Cada imagen consume dos unidades de consulta y una llamada de la cuota global de IA, que debe reservar el controlador antes del OCR. La interpretación posterior del texto se omite con `skip_ai: true`, evitando una segunda llamada al modelo. El OCR admite hasta 1.800 tokens de salida y 5.000 caracteres extraídos, con plazo global de 6,5 s y sin reintentos. Las consultas de texto mantienen 600 tokens y su límite previo de contexto. El límite de 3 MiB es exclusivo de visión. El coste de entrada de una imagen depende de su resolución, por lo que el límite global cuenta llamadas y no garantiza un importe monetario fijo.
 
-La imagen, su base64 y el texto original extraído no se guardan en la base ni se registran en logs. El struct oculta el data URL al inspeccionarse. El aviso de privacidad debe explicar el procesamiento de capturas con Meta durante este piloto. Una captura borrosa, texto mal transcrito o un enlace truncado son causas de incertidumbre, no evidencia de seguridad.
+El supervisor `ImageTasks` admite como máximo cuatro OCR simultáneos y las tareas no enlazan su fallo al proceso HTTP. La saturación devuelve un fallo controlado sin llamar al proveedor; la cuota reservada se conserva. La imagen, su base64 y el texto original extraído no se guardan en la base ni se registran en logs. El struct oculta el data URL al inspeccionarse. El aviso de privacidad debe explicar el procesamiento de capturas con Meta durante este piloto. Una captura borrosa, texto mal transcrito o un enlace truncado son causas de incertidumbre, no evidencia de seguridad.
 
 ## Comprobación
 
