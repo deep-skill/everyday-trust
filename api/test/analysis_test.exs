@@ -247,4 +247,11 @@ defmodule EverydayTrust.AnalysisTest do
     assert result["verdict"] == "suspicious"
     assert result["coverage"]["ai"] == "completed"
   end
+
+  test "IP recognition handles brackets and rejects ordinary or oversized hostnames" do
+    assert Signals.ip?("192.0.2.1")
+    assert Signals.ip?("[2001:db8::1]")
+    refute Signals.ip?("synthetic.example")
+    refute Signals.ip?(String.duplicate("9", 253))
+  end
 end

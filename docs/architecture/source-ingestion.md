@@ -59,3 +59,5 @@ El [modelo de datos](data-model.md) separa estas entidades y su procedencia. El 
 La descarga íntegra del 17-oct coincide con el SHA anterior y el blob Git `067505dbc834384b48c3cd9e62114ad9c86ce6cd`, commit `12a20bf8dd2b7e78d9d38fc12b3e5c970f79d1a7`. Su publicación es del 2-oct-2026, no del día de descarga. El importador distingue ambas fechas y trata esta versión como histórica, con cobertura parcial y peso medio de sus reportes. La descarga reciente no renueva su publicación.
 
 El archivo también incluye IPv4: se normalizan como hosts reportados sin visitarlos. La coincidencia es exacta; los conflictos con dominios oficiales exigen revisión. La ausencia de un host en esta versión histórica no habilita verde. El dataset crudo permanece ignorado y no se publica con el repositorio.
+
+La versión verificada de 391.548 hosts también se importó a RDS durante el despliegue privado. Conserva publicación del 2-oct y descarga del 17-oct en Lima; su cobertura continúa parcial. Operación y SHA en devops-agents.

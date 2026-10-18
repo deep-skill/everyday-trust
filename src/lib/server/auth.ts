@@ -79,7 +79,9 @@ export async function currentSession(cookies: Cookies): Promise<Session | null> 
     await client.query('BEGIN');
     const { rows } = await client.query('SELECT payload FROM bff.web_sessions WHERE id_hash=$1 AND expires_at>now() FOR UPDATE', [digest(identifier)]);
     if (!rows[0]) { await client.query('COMMIT'); cookies.delete(authCookie, cookieOptions); return null; }
-    let session = unseal<Session>(rows[0].payload, `session:${digest(identifier)}`);
+    let session: Session;
+    try { session = unseal<Session>(rows[0].payload, `session:${digest(identifier)}`); }
+    catch { throw new InvalidGrant(); }
     if (session.expiresAt < Date.now() + 60_000) {
       const tokens = await exchange({ grant_type: 'refresh_token', refresh_token: session.refresh });
       const claims = await verify(tokens.access_token, 'access');

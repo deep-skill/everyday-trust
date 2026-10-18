@@ -8,11 +8,11 @@ El usuario consulta sin cuenta y recibe señales, un resumen y un siguiente paso
 
 ## Estado comprobable
 
-Implementación local con SvelteKit/TypeScript/Tailwind, BFF Node, API Elixir/Phoenix y PostgreSQL. Incluye acceso OIDC/PKCE, cookies opacas, tokens cifrados en servidor, autorización por propietario, cuotas atómicas, vencimiento y borrado. La autenticación se comprueba con un proveedor simulado y tokens RSA, sin crear usuarios reales ni enviar emails/SMS.
+Implementación desplegada en AWS en una red privada: SvelteKit/TypeScript/Tailwind, BFF Node, API Elixir/Phoenix, RDS PostgreSQL y Cognito Essentials. Incluye OIDC/PKCE, cookies opacas, tokens cifrados, autorización por propietario, cuotas atómicas, vencimiento y borrado. Hay 67 pruebas Phoenix, 45 Node y 29 comprobaciones de navegador con identidad simulada. Otras 12 comprobaciones integran Cognito y RDS reales con dos cuentas sintéticas, eliminadas al finalizar y sin envío de emails/SMS. El recorrido OIDC completo en navegador contra AWS sigue pendiente.
 
 La ingesta de Phishing.Database valida snapshots y publica una versión atómica. El snapshot contrastado fue publicado el 2-oct: se trata como histórico y no como una comprobación vigente del día. El resultado muestra cobertura y fechas. Los adaptadores directos de IA están escritos; todavía no se han activado con mensajes reales.
 
-Dockerfiles y workflows de CI/GHCR están preparados. AWS/RDS/Cognito reales, Tunnel, publicación de imágenes y deploy aún requieren configuración y verificación. La [implementación](docs/architecture/implementation.md) distingue estas capacidades de la [arquitectura objetivo](docs/architecture/aws-deployment.md).
+CI, imágenes amd64 en GHCR y despliegue AWS por OIDC/SSM ejecutados correctamente. EC2 no tiene puertos entrantes. El acceso público por Cloudflare Tunnel está pendiente de un token con permisos de escritura. La [implementación](docs/architecture/implementation.md) distingue estas capacidades de la [arquitectura objetivo](docs/architecture/aws-deployment.md).
 
 ## Desarrollo local
 
@@ -25,12 +25,6 @@ cp .env.example .env
 docker compose -f compose.dev.yml up -d --build
 docker compose -f compose.dev.yml exec api-dev mix deps.get --check-locked
 docker compose -f compose.dev.yml exec api-dev mix ecto.setup
-node --env-file=.env scripts/migrate-web.mjs
-```
-
-`db:migrate:web` necesita WEB_DATABASE_URL en el entorno. Para usar el archivo local:
-
-```bash
 node --env-file=.env scripts/migrate-web.mjs
 ```
 
@@ -65,11 +59,11 @@ Se puede indicar el Python con Playwright instalado mediante E2E_PYTHON. Los hel
 
 ## Configuración de producción
 
-Web: API_BASE_URL, API_SERVICE_TOKEN, WEB_DATABASE_URL, DATABASE_CA_FILE, COGNITO_ISSUER/CLIENT_ID/DOMAIN y SESSION_ENCRYPTION_KEY de 32 bytes en base64. COGNITO_CLIENT_SECRET es opcional según el cliente. API: DATABASE_URL, DATABASE_CA_FILE, SECRET_KEY_BASE, API_SERVICE_TOKEN y los mismos issuer/client id. Ver plantillas de entorno y [decisiones implementadas](docs/architecture/implementation.md).
+Web: API_BASE_URL, API_SERVICE_TOKEN, WEB_DATABASE_URL, DATABASE_CA_FILE, COGNITO_ISSUER/CLIENT_ID/DOMAIN y SESSION_ENCRYPTION_KEY de 32 bytes en base64. La imagen de producción exige COGNITO_CLIENT_SECRET y ORIGIN HTTPS. API: DATABASE_URL, DATABASE_CA_FILE, SECRET_KEY_BASE, API_SERVICE_TOKEN y los mismos issuer/client id. Ver plantillas de entorno y [decisiones implementadas](docs/architecture/implementation.md).
 
 Las URLs PostgreSQL no incluyen opciones SSL: se configura una CA explícita con verificación de hostname. Las credenciales de migración se separan de los roles de ejecución; el BFF sólo accede al esquema de sesiones. Ningún secreto entra en las imágenes.
 
-Producción usa RDS privado y EC2/Docker/Nginx/Cloudflare Tunnel según el [diagrama AWS](docs/diagrams/rendered/structurizr-AwsDeployment.svg). Compose, Nginx, roles y script operativo se centralizan en `../devops-agents/everyday-trust/`; recursos, permisos y evidencia en el runbook de ese repositorio. Los workflows públicos ejecutan CI y permiten publicar imágenes GHCR por SHA; el CD AWS con OIDC/SSM sigue pendiente de configurar.
+Producción usa RDS privado y EC2/Docker/Nginx/Cloudflare Tunnel según el [diagrama AWS](docs/diagrams/rendered/structurizr-AwsDeployment.svg). Compose, Nginx, roles y script operativo se centralizan en `../devops-agents/everyday-trust/`; recursos, permisos y evidencia en el runbook de ese repositorio. Los workflows públicos ejecutan CI y permiten publicar imágenes GHCR por SHA; el CD usa OIDC/SSM y un token GHCR efímero, sin llaves AWS persistentes ni SSH.
 
 ## Documentación
 

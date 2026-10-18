@@ -69,8 +69,12 @@ defmodule EverydayTrust.Signals do
 
   def ip?(nil), do: false
 
-  def ip?(host),
-    do: match?({:ok, _}, :inet.parse_address(String.to_charlist(String.trim(host, "[]"))))
+  def ip?(host) do
+    host = host |> String.trim_leading("[") |> String.trim_trailing("]")
+
+    byte_size(host) <= 45 && (String.contains?(host, ":") || Regex.match?(~r/^[0-9.]+$/, host)) &&
+      match?({:ok, _}, :inet.parse_address(String.to_charlist(host)))
+  end
 
   def signal(id, severity, message),
     do: %{"id" => id, "severity" => severity, "message" => message}

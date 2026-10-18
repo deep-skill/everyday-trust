@@ -1,6 +1,6 @@
 # Implementación del primer corte
 
-Estado: implementación local, 17-oct-2026. La API es Phoenix 1.8.15 sobre Elixir 1.18.4/OTP 27; la web usa SvelteKit y adapter-node. PostgreSQL local sirve para desarrollo y pruebas; producción conserva RDS como decisión. No se acredita un despliegue AWS por disponer de Dockerfiles.
+Estado: implementación local y despliegue AWS privado, 17-oct-2026. La API es Phoenix 1.8.15 sobre Elixir 1.18.4/OTP 27; la web usa SvelteKit y adapter-node. PostgreSQL local sirve para desarrollo y pruebas; producción conserva RDS como decisión. No se acredita un despliegue AWS por disponer de Dockerfiles.
 
 ## Recorrido implementado
 
@@ -22,7 +22,7 @@ Valores iniciales de implementación, configurables mediante una revisión poste
 
 Los casos temporales vencen tras una hora, prorrogable por seguimiento hasta cuatro horas desde su creación. El vencimiento se comprueba al leer; una limpieza cada minuto elimina filas vencidas. No se persiste el mensaje original, números, emails ni rutas/query de enlaces. El contexto almacenado sólo contiene la evaluación permitida. Los resúmenes se guardan por elección y tienen lectura/borrado por propietario, con paginación de 20 elementos.
 
-Eliminar la cuenta exige autenticación de los últimos cinco minutos: borra datos de aplicación, bloquea la identidad mediante un hash de control y solicita `DeleteUser` a Cognito. Si el proveedor falla, devuelve `identity_deletion_pending` y permite reintentar la eliminación sin reabrir el acceso a datos. No se comunica éxito del proveedor antes de recibirlo. Las marcas completadas se limpian tras 24 horas; las pendientes requieren reconciliación. Las copias RDS y su restauración siguen pendientes de aprovisionamiento y comprobación.
+Eliminar la cuenta exige autenticación de los últimos cinco minutos: borra datos de aplicación, bloquea la identidad mediante un hash de control y solicita `DeleteUser` a Cognito. Si el proveedor falla, devuelve `identity_deletion_pending` y permite reintentar la eliminación sin reabrir el acceso a datos. No se comunica éxito del proveedor antes de recibirlo. Las marcas completadas se limpian tras 24 horas; las pendientes requieren reconciliación. RDS tiene backups automáticos de siete días y protección de borrado. La restauración y reconciliación de borrados siguen pendientes de ejercicio.
 
 ## Feed y disponibilidad
 
@@ -52,6 +52,16 @@ RDAP utiliza el bootstrap IANA versionado en `api/priv/catalog/rdap-bootstrap.js
 
 El contenedor web exige configuración de identidad, origen HTTPS, cifrado y CA de RDS antes de arrancar. Phoenix exige la misma identidad y bloquea Meta Contributor en producción hasta resolver sus condiciones de datos. Un fallo transitorio de renovación conserva la sesión y devuelve indisponibilidad, sin convertirla silenciosamente en anónima.
 
-AWS está en aprovisionamiento. Cognito usa Essentials, rotación de refresh tokens y managed login v2. El primer stack vacío falló por incompatibilidad entre Lite y rotación, se verificó que no tenía usuarios y se eliminó antes de recrearlo. La entrada por Tunnel requiere un token Cloudflare con permisos de escritura, pendiente. Este estado no acredita todavía un despliegue público ni pruebas con Cognito real.
+AWS está aprovisionado y el despliegue privado pasó por GitHub Actions con OIDC y SSM. Cognito usa Essentials, rotación de refresh tokens y managed login v2. El primer stack vacío falló por incompatibilidad entre Lite y rotación, se verificó que no tenía usuarios y se eliminó antes de recrearlo. La entrada por Tunnel requiere un token Cloudflare con permisos de escritura, pendiente. Este estado no acredita todavía un despliegue público ni el recorrido OIDC completo en navegador contra AWS. Doce comprobaciones privadas con dos identidades Cognito reales y RDS verificaron JWT, aislamiento, guardado, feedback, borrado de consultas y eliminación de ambos usuarios en Cognito, sin emails/SMS.
 
-Verificación local de este corte: 66 pruebas Phoenix, 45 pruebas Node, 29 comprobaciones de navegador y chequeo Svelte sin errores ni advertencias.
+Verificación local de este corte: 67 pruebas Phoenix, 45 pruebas Node, 29 comprobaciones de navegador y chequeo Svelte sin errores ni advertencias.
+
+## Verificación AWS privada
+
+GitHub Actions desplegó imágenes amd64 fijadas por digest a través de OIDC y SSM. RDS privado verifica TLS/CA y separa roles de API, BFF y migración. RDS y Cognito tienen protección de borrado activa. Las credenciales temporales de bootstrap y GHCR se eliminaron al completar la operación.
+
+El catálogo de 391.548 hosts quedó cargado en RDS con el SHA y fechas descritos arriba. Sigue siendo histórico y de cobertura parcial. El primer importador tardó varios minutos en el host nuevo sin créditos; se permitió un burst temporal acotado y se restauró `standard` al terminar. Un prefiltro IP evita enviar hostnames DNS al parser de direcciones y limita la longitud; el barrido local de 392.178 filas tomó 0,40 segundos. Ese tiempo no mide una ingesta completa en RDS.
+
+La cadena privada Nginx → BFF → API → RDS responde 200/201, aplica CSP y permite crear un intento OIDC con PKCE. Managed login acepta `prompt=login` y `max_age=0`, sin acreditar todavía reautenticación interactiva. Las pruebas sintéticas no se suman a consultas reales en las métricas.
+
+Pendientes de integración: permiso Cloudflare para crear Tunnel y DNS; recorrido OIDC completo en navegador público; elección, credencial y condiciones de datos del proveedor de IA. La IA sigue deshabilitada. Restauración de backups pendiente de ejercicio. No se anuncia una URL pública lista.

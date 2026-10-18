@@ -32,11 +32,11 @@ Los wireframes están disponibles como [consulta](diagrams/rendered/wireframe-co
 | Backend como API separada | Indicado por JP |
 | Negocio, flujos y alcance | Borrador para revisión |
 | Web, API, datos y autenticación | Confirmados: SvelteKit, Elixir/Phoenix, PostgreSQL, Cognito y BFF con cookie opaca |
-| Modelo físico y despliegue | RDS elegido por JP; EC2 + Compose + Nginx + Cloudflare Tunnel y Actions/GHCR propuestos, sin desplegar |
+| Modelo físico y despliegue | EC2 + Compose + Nginx, RDS privado y Cognito desplegados; Actions/GHCR/OIDC/SSM verificados. Tunnel público pendiente de permiso Cloudflare |
 | C4 lógico | Borrador modelado y validado con Structurizr |
 | Nombre y marca | Everyday Trust confirmado para el proyecto y `deep-skill/everyday-trust` para el repo. Web: ¿Es estafa? + «Revisa antes de responder»; identidad visual aprobada provisionalmente; pantallas para revisión |
 | IA | API directa; candidatos Muse Spark 1.3 Contributor y deepseek-flash, selección y privacidad por validar |
-| Implementación | API Phoenix, BFF, UI, sesiones e historial implementados localmente; AWS y servicios reales pendientes de configurar y verificar |
+| Implementación | API, BFF, UI, sesiones e historial implementados. AWS privado y 12 comprobaciones de identidad/propiedad/borrado con Cognito real; OIDC completo en navegador AWS y entrada pública pendientes |
 
 ## Entrega del evento y arquitectura objetivo
 

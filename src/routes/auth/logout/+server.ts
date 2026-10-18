@@ -6,7 +6,7 @@ import { database } from '$lib/server/database';
 export const POST = async ({ cookies, url }) => {
   const id = cookies.get(authCookie);
   if (id) {
-    const session = await currentSession(cookies);
+    const session = await currentSession(cookies).catch(() => null);
     await database().query('DELETE FROM bff.web_sessions WHERE id_hash=$1', [digest(id)]);
     if (session) {
       const body = new URLSearchParams({ client_id: env.COGNITO_CLIENT_ID!, token: session.refresh });
