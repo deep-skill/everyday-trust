@@ -16,3 +16,4 @@ config :everyday_trust, EverydayTrustWeb.Endpoint,
 
 config :everyday_trust, service_token: "test-service-token"
 config :everyday_trust, network_checks: false
+config :everyday_trust, test_helpers: true

@@ -10,6 +10,8 @@ config :everyday_trust, EverydayTrustWeb.Endpoint,
 config :phoenix, :json_library, Jason
 
 config :phoenix, :filter_parameters, [
+  "image",
+  "data_url",
   "text",
   "message",
   "authorization",

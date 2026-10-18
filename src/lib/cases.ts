@@ -1,5 +1,8 @@
 export type CaseVerdict = 'high_risk' | 'suspicious' | 'no_signals_detected' | 'inconclusive';
 export interface CaseResult {
+  community_domain?: string | null;
+  report_actions?: import('./components/ReportActions.svelte').ReportAction[];
+  url_scans?: { hostname: string; final_hostname?: string; page_title?: string; brands?: string[]; report_url?: string; checked_at?: string; status: string }[];
   id: string;
   analysis_status: string;
   revision: number;

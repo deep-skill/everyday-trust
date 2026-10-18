@@ -1,0 +1,49 @@
+{
+  "version": "2026-10-18",
+  "channels": [
+    {
+      "id": "google-phishing-report",
+      "brand": null,
+      "label": "Reportar a Google",
+      "channel_type": "web",
+      "purpose": "reporte",
+      "public_value": "https://safebrowsing.google.com/safebrowsing/report_phish/",
+      "source": "https://developers.google.com/safe-browsing/v4/reporting",
+      "verified_at": "2026-10-18",
+      "status": "active"
+    },
+    {
+      "id": "cnsd-incident-report",
+      "brand": null,
+      "label": "Reportar al Centro Nacional de Seguridad Digital",
+      "channel_type": "web",
+      "purpose": "reporte",
+      "public_value": "https://reporte.cnsd.gob.pe/",
+      "source": "https://www.gob.pe/institucion/pcm/noticias/1249567-pcm-y-ministerio-de-justicia-presentan-herramienta-digital-para-reportar-incidentes-de-seguridad-y-proteger-datos-personales",
+      "verified_at": "2026-10-18",
+      "status": "active"
+    },
+    {
+      "id": "bcp-report-guidance",
+      "brand": "BCP",
+      "label": "Ver cómo reportarlo a BCP",
+      "channel_type": "web",
+      "purpose": "reporte",
+      "public_value": "https://www.viabcp.com/seguridad/enlaces-correo",
+      "source": "https://www.viabcp.com/seguridad/enlaces-correo",
+      "verified_at": "2026-10-18",
+      "status": "active"
+    },
+    {
+      "id": "interbank-report-guidance",
+      "brand": "Interbank",
+      "label": "Ver cómo reportarlo a Interbank",
+      "channel_type": "web",
+      "purpose": "reporte",
+      "public_value": "https://interbank.pe/es/blog/interbank-para-mi/consejos-de-ciberseguridad",
+      "source": "https://interbank.pe/es/blog/interbank-para-mi/consejos-de-ciberseguridad",
+      "verified_at": "2026-10-18",
+      "status": "active"
+    }
+  ]
+}

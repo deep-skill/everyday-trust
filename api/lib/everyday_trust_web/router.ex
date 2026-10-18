@@ -12,6 +12,9 @@ defmodule EverydayTrustWeb.Router do
     pipe_through :api
     get "/stats", EverydayTrustWeb.CaseController, :stats
     post "/visits", EverydayTrustWeb.CaseController, :visit
+    post "/image-cases", EverydayTrustWeb.CaseController, :create_image
+    get "/radar", EverydayTrustWeb.CaseController, :radar
+    post "/cases/:id/community", EverydayTrustWeb.CaseController, :community
     post "/cases", EverydayTrustWeb.CaseController, :create
     get "/cases/:id", EverydayTrustWeb.CaseController, :show
     post "/cases/:id/save", EverydayTrustWeb.CaseController, :save

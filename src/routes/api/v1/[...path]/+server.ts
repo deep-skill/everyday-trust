@@ -5,12 +5,13 @@ import { database } from '$lib/server/database';
 import { createHmac } from 'node:crypto';
 
 const allowed: Record<string, RegExp> = {
-  GET: /^(health|stats|me|history|history\/[a-f0-9-]{36}|cases\/[a-f0-9-]{36})$/,
-  POST: /^(visits|cases|cases\/[a-f0-9-]{36}\/(save|messages|feedback|review))$/,
+  GET: /^(health|stats|radar|me|history|history\/[a-f0-9-]{36}|cases\/[a-f0-9-]{36})$/,
+  POST: /^(visits|cases|image-cases|cases\/[a-f0-9-]{36}\/(save|messages|feedback|review|community))$/,
   DELETE: /^(me|history\/[a-f0-9-]{36}|cases\/[a-f0-9-]{36}\/review)$/
 };
 const proxy: RequestHandler = async ({ cookies, params, request, url, getClientAddress }) => {
   const path = params.path ?? '';
+  if (path === 'image-cases' && env.IMAGE_INPUT_ENABLED !== 'true') return json({ error: { message: 'Ruta no disponible.' } }, { status: 404 });
   if (!allowed[request.method]?.test(path)) return json({ error: { message: 'Ruta no disponible.' } }, { status: 404 });
   if (!env.API_BASE_URL || !env.API_SERVICE_TOKEN) return json({ error: { code: 'api_unavailable', message: 'El servicio está iniciando. Inténtalo en unos momentos.' } }, { status: 503 });
   try {
@@ -26,7 +27,7 @@ const proxy: RequestHandler = async ({ cookies, params, request, url, getClientA
         while (true) {
           const { value, done } = await reader.read(); if (done) break;
           size += value.length;
-          if (size > 32_768) { await reader.cancel(); return json({ error: { message: 'El mensaje es demasiado largo.' } }, { status: 413 }); }
+          if (size > (path === 'image-cases' && env.IMAGE_INPUT_ENABLED === 'true' ? 3_145_728 : 32_768)) { await reader.cancel(); return json({ error: { message: 'El mensaje es demasiado largo.' } }, { status: 413 }); }
           chunks.push(value);
         }
       }
@@ -34,7 +35,7 @@ const proxy: RequestHandler = async ({ cookies, params, request, url, getClientA
     }
     const target = new URL(`/api/v1/${path}`, env.API_BASE_URL);
     if (path === 'history' && url.searchParams.has('cursor')) target.searchParams.set('cursor', url.searchParams.get('cursor')!.slice(0, 300));
-    const response = await fetch(target, { method: request.method, headers, body, signal: AbortSignal.timeout(12_000), redirect: 'error' });
+    const response = await fetch(target, { method: request.method, headers, body, signal: AbortSignal.timeout(path === 'image-cases' ? 20_000 : 12_000), redirect: 'error' });
     const output = await response.text();
     if (path === 'me' && request.method === 'DELETE' && response.ok && session) {
       await database().query('DELETE FROM bff.web_sessions WHERE subject=$1', [session.subject]);

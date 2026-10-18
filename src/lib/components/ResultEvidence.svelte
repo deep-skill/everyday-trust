@@ -31,6 +31,24 @@
         </li>{/each}</ul>
       </div>
     {/if}
+    {#if result.coverage.safe_browsing && result.coverage.safe_browsing !== 'disabled'}
+      <div class="checked-sites"><h2>Comprobación de Google</h2>
+        <p>{result.coverage.safe_browsing === 'completed' ? 'Consulta completada. Que no haya coincidencias no demuestra que el sitio sea seguro.' : result.coverage.safe_browsing === 'pending' ? 'Comprobación en curso.' : 'No pudimos completar esta comprobación.'}</p>
+        <a href="https://developers.google.com/safe-browsing/v4/advisory" target="_blank" rel="noopener noreferrer">Advisory provided by Google</a>
+      </div>
+    {/if}
+    {#if result.url_scans?.length}
+      <div class="checked-sites"><h2>Navegación aislada</h2><p>Es una instantánea del dominio. Una página o ruta distinta puede comportarse de otra forma.</p>
+        <ul>{#each result.url_scans as scan}<li><span>{scan.hostname}</span>
+          {#if scan.final_hostname}<p>Terminó en: {scan.final_hostname}</p>{/if}
+          {#if scan.page_title}<p>Título observado: {scan.page_title}</p>{/if}
+          {#if scan.brands?.length}<p>Marcas detectadas por urlscan: {scan.brands.join(', ')}</p>{/if}
+          <p>{scan.status === 'matched' ? 'El escaneo encontró señales de riesgo.' : scan.status === 'no_match' ? 'El escaneo no marcó una amenaza; esto no garantiza seguridad.' : 'El escaneo no se completó.'}</p>
+          {#if scan.checked_at}<p>Comprobado el {new Date(scan.checked_at).toLocaleString('es-PE')}.</p>{/if}
+          {#if scan.report_url && /^https:\/\/urlscan\.io\/result\/[a-f0-9-]{36}\/$/.test(scan.report_url)}<a href={scan.report_url} target="_blank" rel="noopener noreferrer">Ver informe de urlscan ↗</a>{/if}
+        </li>{/each}</ul>
+      </div>
+    {/if}
     <div class="review-limits">
       <h2>Lo que esta revisión no confirma</h2>
       <p>No identificamos al dueño de un número ni garantizamos que el mensaje sea seguro.</p>

@@ -5,6 +5,9 @@
   import ResultEvidence from '$lib/components/ResultEvidence.svelte';
   import Traction, { type Totals } from '$lib/components/Traction.svelte';
   import ReviewForm from '$lib/components/ReviewForm.svelte';
+  import ReportActions, { type ReportAction } from '$lib/components/ReportActions.svelte';
+  import ImageInput from '$lib/components/ImageInput.svelte';
+  import CommunityConsent from '$lib/components/CommunityConsent.svelte';
   import { findExample } from '$lib/examples';
   let { data }: PageProps = $props();
   let text = $state(''), submitted = $state(''), loading = $state(false), error = $state('');
@@ -15,6 +18,7 @@
   let totals = $state<Totals | null>(null);
   let confirmDelete = $state(false), deleting = $state(false);
   let loggingOut = $state(false);
+  let image = $state<string | null>(null), imageBusy = $state(false), imageInputKey = $state(0);
   let generation = 0;
   let dialog: HTMLDialogElement;
   let input = $state<HTMLTextAreaElement>();
@@ -29,7 +33,7 @@
     try { totals = (await api('stats')).totals; } catch { /* Metrics never interrupt a consultation. */ }
   }
   async function poll(id: string, version = generation) {
-    for (let attempt = 0; attempt < 22; attempt++) {
+    for (let attempt = 0; attempt < 70; attempt++) {
       if (version !== generation || activeCase !== id || result?.analysis_status !== 'in_progress') return;
       await new Promise(resolve => setTimeout(resolve, 600));
       try {
@@ -44,18 +48,22 @@
     generation++;
 
     text = ''; submitted = ''; result = null; activeCase = null; saved = false; error = '';
+    image = null; imageBusy = false; imageInputKey++;
     followup = ''; followupText = ''; turns = 5; interactions = []; historyOpen = false;
     window.history.replaceState({}, '', '/');
     input?.focus();
   }
   async function submit(event?: SubmitEvent) {
     event?.preventDefault();
-    if (loading || !text.trim()) return;
+    if (loading || imageBusy || (!text.trim() && !image)) return;
     generation++;
     error = ''; loading = true; saved = false; followup = ''; followupText = ''; interactions = []; turns = 5;
     try {
-      const value = await api('cases', 'POST', { text });
+      const value = image && data.features.image_input
+        ? await api('image-cases', 'POST', { image, text })
+        : await api('cases', 'POST', { text });
       submitted = text; text = ''; result = value; activeCase = value.id; historyOpen = false;
+      image = null; imageInputKey++;
       window.history.replaceState({}, '', `/?case=${value.id}`);
       void poll(value.id);
       if (value.analysis_status === 'completed') void refreshTotals();
@@ -141,6 +149,7 @@
     <button class="new-case" onclick={reset} disabled={loading}>＋ Nueva consulta</button>
     <button class="nav-item" onclick={() => openHistory()}>◷ Mis consultas</button>
     <a class="sidebar-guide" href="/como-funciona">Cómo funciona</a>
+    {#if data.features.community_reports}<a class="sidebar-guide" href="/radar">Radar de la comunidad</a>{/if}
     <div class="account-card"><span class="mini-label">A TU RITMO</span><h2>Vuelve a tus consultas.</h2><p>Guarda sólo los casos que elijas y accede a más consultas con una cuenta.</p>
       {#if data.authenticated}<button class="text-button" onclick={() => openHistory()}>Ver mi historial →</button>{:else}<button class="text-button" onclick={() => dialog.showModal()}>Crear cuenta gratis →</button>{/if}
     </div>
@@ -176,7 +185,8 @@
           <form class="composer" id="revisar-mensaje" onsubmit={submit}>
             <label for="message">¿Qué mensaje recibiste?</label>
             <textarea bind:this={input} id="message" bind:value={text} maxlength="5000" rows="5" placeholder="Pega aquí el mensaje o enlace que te llegó…" aria-describedby="privacy-note character-count" disabled={loading}></textarea>
-            <div class="composer-bottom"><span id="character-count">{text.length.toLocaleString('es-PE')} / 5.000</span><button class="primary-button" disabled={loading || !text.trim()} type="submit">{loading ? 'Revisando señales…' : 'Revisar mensaje →'}</button></div>
+            {#if data.features.image_input}{#key imageInputKey}<ImageInput onchange={value => image = value} onbusy={value => imageBusy = value} disabled={loading} />{/key}{/if}
+            <div class="composer-bottom"><span id="character-count">{text.length.toLocaleString('es-PE')} / 5.000</span><button class="primary-button" disabled={loading || imageBusy || (!text.trim() && !image)} type="submit">{loading ? 'Revisando señales…' : 'Revisar mensaje →'}</button></div>
           </form>
           <p class="privacy-note" id="privacy-note">Omite claves, códigos, DNI y datos personales. El historial se guarda sólo si tú lo eliges.</p>
         </section>
@@ -190,6 +200,7 @@
             {#if result.risk_origin === 'interpretation'}<p class="interpretation-note">La sospecha procede de una interpretación de IA, sin corroboración externa del patrón.</p>{/if}
             <div class="next-step"><div><span class="mini-label">TU SIGUIENTE PASO</span><h2>{result.advice[0]}</h2><p>{result.advice[1]}</p></div></div>
             <ResultEvidence {result} />
+            {#if data.features.report_actions}<ReportActions actions={result.report_actions as ReportAction[] | undefined} />{/if}
           </article>
           {#if activeCase}
             <details class="help-panel">
@@ -207,12 +218,13 @@
               </section>
             </details>
             <div class="save-case"><div><p>Vuelve a ver este resultado en tu historial.<span>Sólo se guarda el resumen, sin el mensaje original.</span></p></div><button class="secondary-button" disabled={saved || result.analysis_status === 'in_progress'} onclick={save}>{saved ? 'Resultado guardado' : 'Guardar resultado'}</button></div>
+            {#if data.features.community_reports && result.analysis_status === 'completed' && result.community_domain}{#key activeCase}<CommunityConsent caseId={activeCase} domain={result.community_domain} />{/key}{/if}
             {#if result.analysis_status === 'completed'}{#key activeCase}<ReviewForm caseId={activeCase} onrecord={() => void refreshTotals()} />{/key}{/if}
           {:else}<p class="privacy-note">Resultado histórico. Las comprobaciones corresponden a la fecha indicada.</p>{/if}
         </section>
       {/if}
       <Traction {totals} />
-      <footer class="main-footer"><a href="/como-funciona">Cómo funciona</a><a href="/privacidad">Uso de datos y límites</a><span>Everyday Trust · Deep Skill</span></footer>
+      <footer class="main-footer"><a href="/como-funciona">Cómo funciona</a>{#if data.features.community_reports}<a href="/radar">Radar de la comunidad</a>{/if}<a href="/privacidad">Uso de datos y límites</a><span>Everyday Trust · Deep Skill</span></footer>
     </main>
   </div>
 </div>

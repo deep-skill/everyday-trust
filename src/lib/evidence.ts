@@ -1,6 +1,9 @@
 import type { CaseResult } from './cases';
 
 const explanations: Record<string, [string, string]> = {
+  google_safe_browsing: ['Google detectó una amenaza en el enlace', 'Google Safe Browsing marca esta dirección como posiblemente engañosa o peligrosa. No la abras; verifica por un canal oficial.'],
+  urlscan_malicious: ['El escaneo encontró señales de riesgo', 'La navegación aislada de urlscan encontró indicios maliciosos. El resultado es una instantánea, no confirma la identidad del remitente.'],
+  community_reported: ['La comunidad reportó este dominio', 'Varias sesiones lo compartieron y existe una señal independiente. Sigue siendo un candidato por revisar, no una confirmación de fraude.'],
   asks_credentials: ['Pide claves o códigos', 'Compartirlos puede permitir que otra persona entre a tu cuenta. Confirma la solicitud por un canal que ya conozcas.'],
   urgency: ['Te presiona para actuar rápido', 'Las amenazas de bloqueo o los plazos urgentes pueden hacer que respondas sin verificar.'],
   family_impersonation: ['Dice ser un familiar con otro número', 'Comprueba quién escribe llamando al número que ya tenías guardado.'],

@@ -5,6 +5,9 @@ defmodule EverydayTrust.Application do
     children = [
       EverydayTrust.Repo,
       {Task.Supervisor, name: EverydayTrust.AnalysisTasks, max_children: 20},
+      EverydayTrust.SafeBrowsing,
+      EverydayTrust.SourceDisplay,
+      EverydayTrust.Urlscan.Cache,
       {Phoenix.PubSub, name: EverydayTrust.PubSub},
       EverydayTrust.Identity.Keys,
       EverydayTrust.Cleanup,

@@ -33,6 +33,14 @@ if config_env() == :prod do
 end
 
 config :everyday_trust,
+  report_actions_enabled: config_env() != :test && System.get_env("REPORT_ACTIONS_ENABLED", "false") == "true",
+  image_input_enabled: config_env() != :test && System.get_env("IMAGE_INPUT_ENABLED", "false") == "true",
+  community_reports_enabled: config_env() != :test && System.get_env("COMMUNITY_REPORTS_ENABLED", "false") == "true",
+  safe_browsing_enabled:
+    config_env() != :test && System.get_env("SAFE_BROWSING_ENABLED", "false") == "true",
+  safe_browsing_api_key: System.get_env("GOOGLE_SAFE_BROWSING_API_KEY"),
+  urlscan_enabled: config_env() != :test && System.get_env("URLSCAN_ENABLED", "false") == "true",
+  urlscan_api_key: System.get_env("URLSCAN_API_KEY"),
   cognito_issuer: System.get_env("COGNITO_ISSUER"),
   cognito_client_id: System.get_env("COGNITO_CLIENT_ID"),
   ai_provider: System.get_env("AI_PROVIDER", "disabled"),

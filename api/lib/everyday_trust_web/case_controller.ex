@@ -32,6 +32,16 @@ defmodule EverydayTrustWeb.CaseController do
 
   def health(conn, _), do: json(conn, %{status: "ok", version: "0.1.0"})
 
+  def create_image(conn, %{"image" => image} = params) do
+    respond(conn, Cases.create_image(image, Map.get(params, "text", ""), conn.assigns.session, conn.assigns.owner, conn.assigns.network, demo: params["demo"] == true), 201)
+  end
+
+  def create_image(conn, _), do: respond(conn, {:error, 400, "invalid_image"})
+
+  def community(conn, %{"id" => id} = params), do: respond(conn, EverydayTrust.Community.submit(id, conn.assigns.session, conn.assigns.owner, conn.assigns.network, params["consent"]))
+
+  def radar(conn, _), do: respond(conn, EverydayTrust.Community.radar())
+
   def create(conn, %{"text" => text}) when is_binary(text) do
     cond do
       String.trim(text) == "" ->
@@ -132,6 +142,11 @@ defmodule EverydayTrustWeb.CaseController do
   end
 
   defp respond(conn, result), do: respond(conn, result, 200)
+
+  defp message_for_code("image_no_text", _), do: "No pudimos leer un mensaje en la captura. Prueba con una imagen más clara o pega el texto."
+  defp message_for_code("image_too_large", _), do: "La captura debe pesar como máximo 2 MB."
+  defp message_for_code("invalid_image", _), do: "Usa una captura JPEG, PNG o WebP de hasta 1280 píxeles, sin metadatos."
+  defp message_for_code("image_unavailable", _), do: "No pudimos leer la captura ahora. Puedes pegar el texto del mensaje."
 
   defp message_for_code("recent_login_required", _),
     do:

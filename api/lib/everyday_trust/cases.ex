@@ -69,18 +69,40 @@ defmodule EverydayTrust.Cases do
           else: []
         )
 
-    case reserve(limits) do
+    reservation = if options[:quota_reserved], do: :ok, else: reserve(limits)
+
+    case reservation do
       :ok ->
-        base = Analysis.run(text, feed: true)
-        pending = EverydayTrust.Interpreter.enabled?()
+        base = Analysis.run(text, feed: true) |> EverydayTrust.Community.enrich()
+        base =
+          if options[:input_kind] == "image",
+            do: base |> Map.put("input_kind", "image") |> put_in(["coverage", "image_extraction"], "completed") |> put_in(["coverage", "ai"], "not_applicable"),
+            else: base
+        safe_browsing = EverydayTrust.SafeBrowsing.enabled?()
+        urlscan = EverydayTrust.Urlscan.enabled?()
+        ai = !options[:skip_ai] && EverydayTrust.Interpreter.enabled?()
+        pending = ai || safe_browsing || urlscan
         now = DateTime.utc_now()
+        deadline_seconds = cond do
+          urlscan -> 40
+          safe_browsing -> 10
+          true -> 8
+        end
+
+        base =
+          if safe_browsing,
+            do: put_in(base, ["coverage", "safe_browsing"], "pending"),
+            else: base
+
+        base = if urlscan, do: put_in(base, ["coverage", "urlscan"], "pending"), else: base
+        base = if ai, do: put_in(base, ["coverage", "ai"], "pending"), else: base
 
         result =
           if pending,
             do:
               base
               |> Map.put("analysis_status", "in_progress")
-              |> put_in(["coverage", "ai"], "pending")
+              |> put_in(["coverage", "ai"], if(ai, do: "pending", else: Map.get(base["coverage"], "ai", "disabled")))
               |> abstain(),
             else: base
 
@@ -96,7 +118,7 @@ defmodule EverydayTrust.Cases do
                 result: result,
                 context: Analysis.context(result),
                 analysis_pending: pending,
-                analysis_deadline: if(pending, do: DateTime.add(now, 8)),
+                analysis_deadline: if(pending, do: DateTime.add(now, deadline_seconds)),
                 expires_at: DateTime.add(now, 3600),
                 max_expires_at: DateTime.add(now, 14_400)
               })
@@ -107,11 +129,15 @@ defmodule EverydayTrust.Cases do
 
         if pending do
           model_text = EverydayTrust.Interpreter.input_text(text)
+          urls = if safe_browsing || urlscan, do: EverydayTrust.Signals.extract_urls(text), else: []
 
-          Task.Supervisor.start_child(EverydayTrust.AnalysisTasks, fn ->
-            enriched = EverydayTrust.Interpreter.enrich(base, model_text)
-            finish(item.id, enriched)
-          end)
+          case Task.Supervisor.start_child(EverydayTrust.AnalysisTasks, fn ->
+                 enriched = EverydayTrust.AsyncSources.enrich(base, model_text, urls, skip_ai: options[:skip_ai])
+                 finish(item.id, enriched)
+               end) do
+            {:ok, _} -> :ok
+            _ -> finish(item.id, EverydayTrust.AsyncSources.unavailable(result))
+          end
         end
 
         {:ok, present(item)}
@@ -128,10 +154,35 @@ defmodule EverydayTrust.Cases do
         "BANCO EJEMPLO: Tu cuenta será bloqueada hoy. Valida tu contraseña en https://acceso-banco.example/validar para evitar el bloqueo."
       ]
 
-  defp reserve(limits) do
+  def create_image(image, text, session, owner, network, options \\ []) do
+    with true <- EverydayTrust.ImageInput.enabled?(),
+         true <- is_binary(text) && String.length(text) <= 5_000,
+         {:ok, validated} <- EverydayTrust.ImageInput.validate(image),
+         limits <- [{session, owner, "analysis", if(owner, do: 25, else: 5)}, {network, nil, "network", 200}, {"global", nil, "all_analyses", 1000}, {"global", nil, "ai", 200, 1}],
+         :ok <- reserve(limits, 2),
+         {:ok, extracted} <- EverydayTrust.ImageInput.extract(validated),
+         false <- extracted.no_text,
+         combined <- String.trim(extracted.text <> "\n" <> text),
+         true <- String.length(combined) > 0 && String.length(combined) <= 5_000 do
+      create(combined, session, owner, network: network, demo: options[:demo], quota_reserved: true, skip_ai: true, input_kind: "image")
+    else
+      {:error, :too_large} -> {:error, 413, "image_too_large"}
+      {:error, reason} when reason in [:invalid_image, :dimensions, :metadata] -> {:error, 400, "invalid_image"}
+      {:error, _} -> {:error, 503, "image_unavailable"}
+      :error -> {:error, 429, "quota_exceeded"}
+      true -> {:error, 422, "image_no_text"}
+      false -> if EverydayTrust.ImageInput.enabled?(), do: {:error, 422, "image_no_text"}, else: {:error, 404, "image_disabled"}
+      _ -> {:error, 400, "invalid_image"}
+    end
+  end
+
+  defp reserve(limits, amount \\ 1) do
     case Repo.transaction(fn ->
-           Enum.each(limits, fn {s, o, operation, limit} ->
-             unless quota(s, o, operation, limit), do: Repo.rollback(:quota)
+           Enum.each(limits, fn
+             {s, o, operation, limit} ->
+               unless quota(s, o, operation, limit, amount), do: Repo.rollback(:quota)
+             {s, o, operation, limit, cost} ->
+               unless quota(s, o, operation, limit, cost), do: Repo.rollback(:quota)
            end)
          end) do
       {:ok, _} -> :ok
@@ -150,6 +201,9 @@ defmodule EverydayTrust.Cases do
   end
 
   def finish(id, result) do
+    result = EverydayTrust.Community.enrich(result)
+    EverydayTrust.SourceDisplay.put(id, result)
+    result = EverydayTrust.SourceDisplay.sanitize(result)
     result = result |> Map.put("analysis_status", "completed") |> Map.put("revision", 2)
     result = if result["coverage"]["ai"] == "completed", do: result, else: abstain(result)
 
@@ -171,21 +225,29 @@ defmodule EverydayTrust.Cases do
   defp expire_pending(item) do
     if item.analysis_pending &&
          DateTime.compare(item.analysis_deadline, DateTime.utc_now()) != :gt do
-      finish(item.id, put_in(item.result, ["coverage", "ai"], "unavailable"))
+      result =
+        Map.update!(item.result, "coverage", fn coverage ->
+          Map.new(coverage, fn
+            {key, "pending"} -> {key, "unavailable"}
+            entry -> entry
+          end)
+        end)
+
+      finish(item.id, result)
       Repo.get!(Case, item.id)
     else
       item
     end
   end
 
-  def quota(session, owner, operation, limit) do
+  def quota(session, owner, operation, limit, amount \\ 1) do
     subject = if owner, do: owner.id, else: session
     key = "#{operation}:#{Date.utc_today()}:#{subject}"
 
     result =
       Repo.query!(
-        "INSERT INTO quota_buckets (key,count,expires_at) VALUES ($1,1,$2) ON CONFLICT (key) DO UPDATE SET count = quota_buckets.count + 1 WHERE quota_buckets.count < $3 RETURNING count",
-        [key, DateTime.add(DateTime.utc_now(), 172_800), limit]
+        "INSERT INTO quota_buckets (key,count,expires_at) VALUES ($1,$4,$2) ON CONFLICT (key) DO UPDATE SET count = quota_buckets.count + $4 WHERE quota_buckets.count + $4 <= $3 RETURNING count",
+        [key, DateTime.add(DateTime.utc_now(), 172_800), limit, amount]
       )
 
     result.num_rows == 1
@@ -208,10 +270,13 @@ defmodule EverydayTrust.Cases do
 
   def present(item),
     do:
-      Map.merge(item.result, %{
+      EverydayTrust.SourceDisplay.restore(item.id, item.result)
+      |> Map.merge(%{
         "id" => item.id,
-        "expires_at" => DateTime.to_iso8601(item.expires_at)
+        "expires_at" => DateTime.to_iso8601(item.expires_at),
+        "community_domain" => if(item.kind == "demo", do: nil, else: EverydayTrust.Community.eligible_domain(item.result))
       })
+      |> EverydayTrust.ReportActions.enrich()
 
   def save(id, session, owner) do
     with {:ok, item} <- get(id, session, owner) do
@@ -357,6 +422,7 @@ defmodule EverydayTrust.Cases do
   end
 
   def cleanup do
+    EverydayTrust.Community.cleanup()
     now = DateTime.utc_now()
 
     Repo.all(from c in Case, where: c.analysis_pending and c.analysis_deadline < ^now)
