@@ -1,0 +1,84 @@
+name: Deploy AWS
+on:
+  workflow_dispatch:
+    inputs:
+      web_image:
+        description: Web image including sha256 digest
+        required: true
+      api_image:
+        description: API image including sha256 digest
+        required: true
+      nginx_image:
+        description: Official Nginx image including sha256 digest
+        required: true
+      tunnel_image:
+        description: Cloudflared image including sha256 digest
+        required: true
+      ops_sha:
+        description: SHA256 of approved operations bundle in private S3
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: everyday-trust-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    steps:
+      - uses: aws-actions/configure-aws-credentials@557591d3fb8057929645fd3c7147240c3ec8e690
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+          mask-aws-account-id: true
+      - name: Deploy immutable images through the project SSM document
+        env:
+          WEB_IMAGE: ${{ inputs.web_image }}
+          API_IMAGE: ${{ inputs.api_image }}
+          NGINX_IMAGE: ${{ inputs.nginx_image }}
+          TUNNEL_IMAGE: ${{ inputs.tunnel_image }}
+          OPS_SHA: ${{ inputs.ops_sha }}
+          INSTANCE_ID: ${{ secrets.AWS_INSTANCE_ID }}
+          DOCUMENT_NAME: ${{ secrets.AWS_DEPLOY_DOCUMENT }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          chmod 700 "$work"
+          export DEPLOY_WORK="$work"
+          trap 'rm -rf "$work"' EXIT
+          python3 - <<'PY'
+          import json,os,re
+          from pathlib import Path
+          root=Path(os.environ['DEPLOY_WORK'])
+          rules={'WEB_IMAGE':r'ghcr.io/deep-skill/everyday-trust-web@sha256:[a-f0-9]{64}','API_IMAGE':r'ghcr.io/deep-skill/everyday-trust-api@sha256:[a-f0-9]{64}','NGINX_IMAGE':r'(mirror.gcr.io/library/)?nginx@sha256:[a-f0-9]{64}','TUNNEL_IMAGE':r'cloudflare/cloudflared@sha256:[a-f0-9]{64}','OPS_SHA':r'[a-f0-9]{64}'}
+          for key,pattern in rules.items():assert re.fullmatch(pattern,os.environ[key]),key
+          parameter={'Name':'/everyday-trust/prod/deploy/ghcr-token','Value':os.environ['REGISTRY_TOKEN'],'Type':'SecureString','Overwrite':True}
+          command={'DocumentName':os.environ['DOCUMENT_NAME'],'InstanceIds':[os.environ['INSTANCE_ID']],'Parameters':{key:[os.environ[value]] for key,value in {'WebImage':'WEB_IMAGE','ApiImage':'API_IMAGE','NginxImage':'NGINX_IMAGE','TunnelImage':'TUNNEL_IMAGE','OpsSha':'OPS_SHA','RegistryUser':'REGISTRY_USER'}.items()},'Comment':'Everyday Trust immutable deployment'}
+          for name,body in [('parameter.json',parameter),('command.json',command)]:
+            path=root/name;path.write_text(json.dumps(body));path.chmod(0o600)
+          PY
+          aws ssm put-parameter --cli-input-json "file://$work/parameter.json" >/dev/null
+          command_id=$(aws ssm send-command --cli-input-json "file://$work/command.json" --query Command.CommandId --output text)
+          for attempt in $(seq 1 120); do
+            status=$(aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" --query Status --output text 2>/dev/null || true)
+            case "$status" in
+              Success) echo 'Private deployment and health check passed.' >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+              Failed|Cancelled|TimedOut) echo "Deployment status: $status. Inspect the project SSM command in AWS."; exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo 'Deployment polling exceeded its deadline.'
+          exit 1
+      - name: Remove ephemeral registry credential
+        if: always()
+        run: aws ssm delete-parameter --name /everyday-trust/prod/deploy/ghcr-token >/dev/null 2>&1 || true
