@@ -23,6 +23,7 @@ defmodule EverydayTrust.MixProject do
       {:postgrex, "~> 0.21"},
       {:jason, "~> 1.4"},
       {:req, "~> 0.5"},
+      {:mint, "~> 1.11"},
       {:jose, "~> 1.11"},
       {:public_sufx, "0.7.20260908"},
       {:idna, "~> 7.1"}

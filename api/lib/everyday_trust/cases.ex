@@ -106,10 +106,10 @@ defmodule EverydayTrust.Cases do
           end)
 
         if pending do
-          safe_text = Analysis.minimize(text)
+          model_text = EverydayTrust.Interpreter.input_text(text)
 
           Task.Supervisor.start_child(EverydayTrust.AnalysisTasks, fn ->
-            enriched = EverydayTrust.Interpreter.enrich(base, safe_text)
+            enriched = EverydayTrust.Interpreter.enrich(base, model_text)
             finish(item.id, enriched)
           end)
         end

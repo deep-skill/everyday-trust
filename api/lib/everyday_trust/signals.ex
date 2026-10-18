@@ -158,8 +158,8 @@ defmodule EverydayTrust.Signals do
     initial = parse(input)
     short = initial && shortener?(initial)
 
-    {final, resolved} =
-      if short && network, do: resolve(initial, MapSet.new(), 0), else: {initial, !short}
+    {final, resolved, redirect_hosts} =
+      if short && network, do: resolve(initial, [], 0), else: {initial, !short, []}
 
     host = if final, do: final.host, else: ""
     domain = if ip?(host), do: nil, else: EverydayTrust.Domain.registrable_domain(host)
@@ -238,12 +238,32 @@ defmodule EverydayTrust.Signals do
         "El dominio fue registrado hace menos de seis meses."
       )
 
+    destination =
+      if network && final && !shortener?(final),
+        do: EverydayTrust.Destination.check(final),
+        else: %{status: "not_checked", hosts: []}
+
+    extra_hosts = destination.hosts |> Enum.reject(&(&1 == host)) |> Enum.uniq()
+    extra_findings = Enum.map(extra_hosts, &url("https://" <> &1, false))
+    changed = Enum.any?(extra_findings, &(&1["domain"] != domain))
+
+    signals =
+      (signals ++ Enum.flat_map(extra_findings, & &1["signals"]))
+      |> add(
+        changed,
+        "destination_changed",
+        "low",
+        "El sitio redirige a una dirección de otra empresa o servicio."
+      )
+
     %{
       "domain" => domain,
       "hostname" => host,
       "official_brand" =>
         if(official, do: official["name"], else: if(government, do: "Estado peruano (gob.pe)")),
       "signals" => signals,
+      "destination_status" => destination.status,
+      "checked_hosts" => Enum.uniq(redirect_hosts ++ [host | destination.hosts]),
       "age_status" => status,
       "redirect_status" =>
         if(short, do: if(resolved, do: "match", else: "unavailable"), else: "not_applicable")
@@ -270,11 +290,11 @@ defmodule EverydayTrust.Signals do
   defp resolve(uri, seen, hop) do
     cond do
       !shortener?(uri) ->
-        {uri, true}
+        resolved(uri, true, seen)
 
       hop >= 5 || uri.scheme != "https" || uri.port != 443 || uri.userinfo ||
-          MapSet.member?(seen, URI.to_string(uri)) ->
-        {uri, false}
+          URI.to_string(uri) in seen ->
+        resolved(uri, false, seen)
 
       true ->
         with {:ok, %{status: status, headers: headers}} <- http(:head, URI.to_string(uri)),
@@ -283,14 +303,18 @@ defmodule EverydayTrust.Signals do
              target <- URI.merge(uri, location),
              true <- target.scheme in ["http", "https"],
              next when not is_nil(next) <- parse(URI.to_string(target)) do
-          resolve(next, MapSet.put(seen, URI.to_string(uri)), hop + 1)
+          resolve(next, seen ++ [URI.to_string(uri)], hop + 1)
         else
-          _ -> {uri, false}
+          _ -> resolved(uri, false, seen)
         end
     end
   rescue
-    _ -> {uri, false}
+    _ -> resolved(uri, false, seen)
   end
+
+  defp resolved(uri, complete, seen),
+    do:
+      {uri, complete, Enum.map(seen ++ [URI.to_string(uri)], &URI.parse(&1).host) |> Enum.uniq()}
 
   defp rdap_base(domain), do: Map.get(@rdap_routes, domain |> String.split(".") |> List.last())
 

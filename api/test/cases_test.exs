@@ -1,6 +1,6 @@
 defmodule EverydayTrust.CasesTest do
   use ExUnit.Case, async: false
-  alias EverydayTrust.{Cases, Repo, Case, SavedCase}
+  alias EverydayTrust.{Cases, Repo, Case, SavedCase, Analysis}
   @session String.duplicate("a", 64)
   @other String.duplicate("b", 64)
   setup do
@@ -65,6 +65,16 @@ defmodule EverydayTrust.CasesTest do
     assert {:error, 404, _} = Cases.get(result["id"], @session, nil)
     Cases.cleanup()
     refute Repo.get(Case, result["id"])
+  end
+
+  test "checked redirect hosts never persist identifying subdomains" do
+    {:ok, result} =
+      Cases.create("https://SYNTHETICPERSON.customer.example/private?token=SECRET", @session, nil)
+
+    stored = Repo.get!(Case, result["id"]) |> Map.fetch!(:result) |> Jason.encode!()
+    refute stored =~ "syntheticperson"
+    refute stored =~ "SECRET"
+    refute stored =~ "private"
   end
 
   test "atomic quota limits concurrent requests" do
@@ -211,5 +221,130 @@ defmodule EverydayTrust.CasesTest do
     assert item.result["verdict"] == "suspicious"
     assert EverydayTrust.Metrics.today().queries["completed"] == 1
     refute Jason.encode!(item.result) =~ "4821"
+  end
+
+  describe "Contributor internal full-context pilot" do
+    setup do
+      Application.put_env(:everyday_trust, :ai_provider, "meta")
+      Application.put_env(:everyday_trust, :ai_key, "synthetic-test-key")
+      Application.put_env(:everyday_trust, :ai_data_approved, true)
+
+      on_exit(fn ->
+        for key <- [:ai_provider, :ai_key, :ai_data_approved, :test_model_request],
+            do: Application.delete_env(:everyday_trust, key)
+      end)
+
+      :ok
+    end
+
+    test "complete message and all analysis reach the model" do
+      parent = self()
+
+      Application.put_env(:everyday_trust, :test_model_request, fn _, options ->
+        input =
+          options[:json][:messages] |> List.last() |> Map.fetch!(:content) |> Jason.decode!()
+
+        send(parent, {:contributor, input})
+
+        model_response(%{
+          "suggested_verdict" => "inconclusive",
+          "scam_type" => "undetermined",
+          "cited_signal_ids" => []
+        })
+      end)
+
+      text =
+        "SYNTHETICPERSON clave 4821, DNI 12345678, https://secret.example/private?token=SECRET"
+
+      base = Analysis.run(text)
+      result = EverydayTrust.Interpreter.enrich(base, text)
+      assert result["coverage"]["ai"] == "completed"
+      assert_received {:contributor, payload}
+      assert payload["message"] == text
+      assert payload["analysis"] == base
+      refute Jason.encode!(result) =~ "SYNTHETICPERSON"
+      refute Jason.encode!(result) =~ "SECRET"
+    end
+
+    test "async task preserves original input without persisting it" do
+      parent = self()
+
+      Application.put_env(:everyday_trust, :test_model_request, fn _, options ->
+        input =
+          options[:json][:messages] |> List.last() |> Map.fetch!(:content) |> Jason.decode!()
+
+        send(parent, {:contributor, input})
+
+        model_response(%{
+          "suggested_verdict" => "suspicious",
+          "scam_type" => "other",
+          "cited_signal_ids" => []
+        })
+      end)
+
+      text = "INTERNAL_FIXTURE mensaje completo https://fixture.example/path?recipient=TESTVALUE"
+      {:ok, result} = Cases.create(text, @session, nil)
+      assert_receive {:contributor, payload}, 500
+      assert payload["message"] == text
+      assert Map.has_key?(payload["analysis"], "domains")
+      assert Map.has_key?(payload["analysis"], "coverage")
+
+      for _ <- 1..30 do
+        if Repo.get!(Case, result["id"]).analysis_pending, do: Process.sleep(10)
+      end
+
+      row = Repo.get!(Case, result["id"])
+      refute row.analysis_pending
+
+      for marker <- ["INTERNAL_FIXTURE", "TESTVALUE"],
+          do: refute(Jason.encode!(row.result) <> row.context =~ marker)
+    end
+
+    test "maximum Unicode input is preserved within the full-context budget" do
+      parent = self()
+      text = String.duplicate("🗻", 5000)
+
+      Application.put_env(:everyday_trust, :test_model_request, fn _, options ->
+        input =
+          options[:json][:messages] |> List.last() |> Map.fetch!(:content) |> Jason.decode!()
+
+        send(parent, {:complete_input, input["message"]})
+
+        model_response(%{
+          "suggested_verdict" => "inconclusive",
+          "scam_type" => "undetermined",
+          "cited_signal_ids" => []
+        })
+      end)
+
+      result = EverydayTrust.Interpreter.enrich(Analysis.run(""), text)
+      assert result["coverage"]["ai"] == "completed"
+      assert_received {:complete_input, ^text}
+    end
+
+    test "follow-up sends the complete question and available case context" do
+      parent = self()
+
+      Application.put_env(:everyday_trust, :test_model_request, fn _, options ->
+        input =
+          options[:json][:messages] |> List.last() |> Map.fetch!(:content) |> Jason.decode!()
+
+        send(parent, {:followup_context, input})
+        model_response(%{"intent" => "verify_identity", "cited_signal_ids" => []})
+      end)
+
+      base = Analysis.run("Un mensaje de prueba.")
+      question = "¿Cómo verifico https://fixture.example/full/path?code=FICTIONAL?"
+      reply = EverydayTrust.Interpreter.followup(base, question, [])
+      assert reply =~ "canal independiente"
+      assert_received {:followup_context, payload}
+      assert payload["question"] == question
+      assert payload["case"] == base
+    end
+  end
+
+  defp model_response(output) do
+    {:ok,
+     %{status: 200, body: %{"choices" => [%{"message" => %{"content" => Jason.encode!(output)}}]}}}
   end
 end

@@ -32,27 +32,27 @@ Los wireframes están disponibles como [consulta](diagrams/rendered/wireframe-co
 | Backend como API separada | Indicado por JP |
 | Negocio, flujos y alcance | Borrador para revisión |
 | Web, API, datos y autenticación | Confirmados: SvelteKit, Elixir/Phoenix, PostgreSQL, Cognito y BFF con cookie opaca |
-| Modelo físico y despliegue | EC2 + Compose + Nginx, RDS privado y Cognito desplegados; Actions/GHCR/OIDC/SSM verificados. Tunnel público pendiente de permiso Cloudflare |
+| Modelo físico y despliegue | EC2 + Compose + Nginx, RDS privado y Cognito desplegados; Actions/GHCR/OIDC/SSM y Tunnel público verificados |
 | C4 lógico | Borrador modelado y validado con Structurizr |
 | Nombre y marca | Everyday Trust confirmado para el proyecto y `deep-skill/everyday-trust` para el repo. Web: ¿Es estafa? + «Revisa antes de responder»; identidad visual aprobada provisionalmente; pantallas para revisión |
-| IA | API directa; candidatos Muse Spark 1.3 Contributor y deepseek-flash, selección y privacidad por validar |
-| Implementación | API, BFF, UI, sesiones e historial implementados. AWS privado y 12 comprobaciones de identidad/propiedad/borrado con Cognito real; OIDC completo en navegador AWS y entrada pública pendientes |
+| IA | Contributor con mensaje completo y evidencia para pruebas internas de hackathon, autorizado por JP. Cambiar modelo/modalidad antes del lanzamiento general; AWS mantiene IA desactivada hasta publicar el corte |
+| Implementación | API, BFF, UI, sesiones e historial implementados. Consulta pública verificada y 12 comprobaciones de identidad/propiedad/borrado con Cognito real; OIDC completo en navegador AWS pendiente |
 
 ## Entrega del evento y arquitectura objetivo
 
-La columna de entrega es una propuesta de compromiso, pendiente de validar y ejecutar. No hay una URL pública verificada ni resultados de operación en esta revisión; documentar un componente no significa tenerlo funcionando.
+La web está disponible en [verifica.deepskill.space](https://verifica.deepskill.space). La tabla conserva el alcance de entrega; la [implementación](architecture/implementation.md) registra las comprobaciones realizadas y lo que sigue pendiente.
 
 | Entrega propuesta para el evento | Arquitectura objetivo | Fuera del primer corte o pendiente, con motivo |
 |---|---|---|
-| P0: consulta anónima de texto/enlaces, evidencias y siguiente acción | Web pública y API separada sobre AWS | Stack confirmado; el prototipo Cloudflare no acredita despliegue AWS |
-| P0: explicación y seguimiento acotado, con piso de reglas | Intérprete con contrato, presupuesto y evaluación | Dos candidatos indicados por JP, pendientes de evaluación y condiciones de datos; sospecha sólo por IA identificada como interpretación |
-| P1: cuenta, mayor uso, guardado voluntario e historial, solicitados por JP | Identidad gestionada y acceso por propietario | Cognito, BFF y PostgreSQL confirmados, aún sin implementar; P1 es orden de ejecución, no exclusión del evento |
-| P0: dominios oficiales con procedencia y un feed integrado y probado | Catálogos versionados e ingesta de varias fuentes | Phishing.Database propuesto como primer feed, con licencia contrastada; falta validar versión, frescura e integración. SBS y canales no se anuncian integrados antes de hacerlo |
+| P0: consulta anónima de texto/enlaces, evidencias y siguiente acción | Web pública y API separada sobre AWS | Desplegado y consulta anónima pública comprobada |
+| P0: explicación y seguimiento acotado, con piso de reglas | Intérprete con contrato, presupuesto y evaluación | Contributor en preview con mensaje completo, señales, dominios y cobertura; salida estructurada, fallback y piso de reglas. Comparación de calidad/costo pendiente |
+| P1: cuenta, mayor uso, guardado voluntario e historial, solicitados por JP | Identidad gestionada y acceso por propietario | Implementado y probado con Cognito/RDS reales; recorrido OIDC completo de navegador pendiente |
+| P0: dominios oficiales con procedencia y un feed integrado y probado | Catálogos versionados e ingesta de varias fuentes | 391.548 hosts de Phishing.Database cargados en RDS; snapshot histórico del 2-oct y cobertura parcial. SBS y canales no se anuncian integrados |
 | P0: evaluación mínima reproducible y métricas sin texto | Evaluador local/CI e informe ampliado P2 | Calidad y costos aún no medidos; el informe completo puede ampliarse después, las comprobaciones mínimas no se difieren |
 | P0: conservar extracción de números en texto y sus límites | Canales oficiales curados y entrada dedicada P2 | Comparación de remitentes por validar; sin búsqueda de titulares |
 | P0: resultado breve y evidencia ampliable | Experiencia móvil accesible y continuidad de casos | Capturas/PDF/QR, reportes, compartir, extensión y apps diferidos para contener alcance y tratamiento de datos |
 
-Con el stack confirmado, el primer hito será una consulta completa en el entorno acordado y su comprobación en ventana privada. La [propuesta AWS y Docker](architecture/aws-deployment.md) y su vista C4 ya describen el primer despliegue. La documentación operativa se centraliza en `../devops-agents/docs/hack-the-andes-seguridad.md`, junto con los inventarios AWS y Cloudflare; esos archivos son del workspace de Deep Skill y no se publican con este repo. La entrega del evento vence el 18 de octubre a las 09:00; no se compromete una capacidad por figurar en este objetivo.
+La consulta pública está comprobada en Chrome, incluida una ventana privada; sigue pendiente el recorrido completo de cuenta contra AWS. La [arquitectura AWS y Docker](architecture/aws-deployment.md) y su vista C4 describen el despliegue. La documentación operativa se centraliza en `../devops-agents/docs/hack-the-andes-seguridad.md`, junto con los inventarios AWS y Cloudflare; esos archivos son del workspace de Deep Skill y no se publican con este repo. La entrega del evento vence el 18 de octubre a las 09:00; no se compromete una capacidad por figurar en este objetivo.
 
 ### Orden de ejecución y recortes propuestos
 

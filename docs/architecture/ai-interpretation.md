@@ -1,126 +1,74 @@
 # Contrato del intérprete de IA
 
-Estado: contrato para la API Elixir/Phoenix confirmada. JP indicó API directa y dos candidatos: `muse-spark-1.3-contributor` y `deepseek-flash`. La selección final, las condiciones de datos y los límites monetarios están pendientes; no hay llamadas habilitadas por este documento.
+Estado al17-oct-2026: JP confirmó `muse-spark-1.3-contributor` y pidió enviar el mensaje completo y todas las comprobaciones durante las pruebas internas de hackathon. Esta decisión reemplaza la restricción anterior a códigos de señales. Antes de abrir al público general se cambiará el modelo/modalidad. AWS conserva IA desactivada hasta publicar el corte; la llave permanece fuera de Git y cifrada en runtime.
 
-El modelo interpreta un caso y explica las señales disponibles. La política de riesgo de la aplicación decide el resultado final. Una respuesta bien formada no demuestra que sea correcta.
+El modelo interpreta el lenguaje y los hechos disponibles. La aplicación conserva la decisión final, las explicaciones revisadas y los siguientes pasos. Una salida válida no prueba fraude ni demuestra vulnerabilidades.
 
-## Entrada permitida
+## Entrada efectiva del piloto
 
-| Campo | Contenido y límite |
+El adaptador envía exactamente dos campos en la interpretación inicial:
+
+| Campo | Contenido |
 |---|---|
-| `schema_version`, `policy_version`, `prompt_version` | Versiones fijadas por el servidor |
-| `task` | `initial_explanation` o `case_followup` |
-| `case_context` | Texto minimizado; nunca el original como copia adicional |
-| `signals` | ids, severidad, hechos calculados, procedencia y estado de las comprobaciones |
-| `baseline_verdict`, `risk_floor` | Resultado de reglas y mínimo que debe conservar la política |
-| `interaction` | Categorías opcionales de clic, datos compartidos o pago, sin los valores involucrados |
-| `allowed_actions` | ids de acciones de un catálogo curado, filtradas para el caso |
-| `followup` | Pregunta y contexto reciente minimizados; sólo en seguimiento |
+| `message` | Texto original completo, incluidos enlaces, rutas, parámetros y números que contenga; sin minimización ni recorte |
+| `analysis` | Resultado íntegro del motor: señales con sus mensajes/fuentes, dominios revisados, cobertura, veredicto base, puntaje, consejos y metadatos del análisis |
 
-El servidor prepara la entrada con campos permitidos y tamaño acotado. Una coincidencia con un dominio oficial no se convierte en autenticación del remitente. Si no puede preparar contexto permitido, omite la llamada y mantiene las señales.
+El servidor no agrega cookies, tokens de sesión, credenciales del proveedor ni datos de identidad de la cuenta. El texto original sólo se captura en la tarea asíncrona; no entra al resultado guardado, al contexto PostgreSQL ni a logs. Esto no impide que el proveedor lo procese según sus condiciones.
 
-## Salida propuesta
+El prompt distingue el mensaje y las fuentes como datos no confiables. Las URLs y el texto no se convierten en instrucciones. Contributor no recibe herramientas de navegación o escritura. DNS, HTTP, registro y alertas son comprobaciones de módulos locales, descritas en [implementación](implementation.md#comprobación-de-sitios-y-contributor-corte-local).
 
-JSON estricto, sin campos adicionales. El adaptador devuelve un objeto validado o un fallo clasificado, nunca texto del proveedor tratado directamente como resultado.
+## Salida efectiva y política
+
+El adaptador solicita JSON y consume tres campos:
 
 | Campo | Restricción |
 |---|---|
-| `schema_version` | Versión esperada por el adaptador |
 | `suggested_verdict` | `high_risk`, `suspicious`, `no_signals_detected` o `inconclusive` |
-| `scam_type` | Un valor del catálogo cerrado de patrones descrito abajo |
-| `explanation` | Español claro, máximo propuesto de 500 caracteres |
-| `cited_signal_ids` | Hasta 8 ids presentes en la entrada; puede estar vacío cuando la sospecha procede sólo de interpretar el texto |
-| `action_ids` | Hasta 3 ids de `allowed_actions` |
-| `followup_answer` | Nulo en explicación inicial; máximo propuesto de 700 caracteres en seguimiento |
-| `scope` | `in_scope` u `out_of_scope` |
+| `scam_type` | Valor del catálogo cerrado; uno desconocido se convierte en `undetermined` |
+| `cited_signal_ids` | Lista de hasta ocho ids presentes en el caso; puede estar vacía para una interpretación sólo del texto |
 
-Ejemplo sintético del objeto esperado, con un id de señal ilustrativo que debe existir en la entrada:
+No se muestra prosa del proveedor. Títulos, explicaciones, consejos y contactos proceden de contenido revisado en la aplicación. Referencias inventadas, JSON inválido o salida mayor de8.000 bytes causan fallback.
 
-```json
-{
-  "schema_version": "1",
-  "suggested_verdict": "suspicious",
-  "scam_type": "bank_impersonation",
-  "explanation": "El dominio menciona a la entidad y no coincide con los dominios oficiales comprobados.",
-  "cited_signal_ids": ["brand_domain_mismatch"],
-  "action_ids": ["verify_through_official_channel"],
-  "followup_answer": null,
-  "scope": "in_scope"
-}
-```
+El modelo nunca reduce el piso determinista. Una interpretación sin corroboración puede elevar como máximo a `suspicious`, incluso si el proveedor propone alto riesgo. Se marca como interpretación. Una respuesta HTTP o coincidencia con sitio oficial no autentica al remitente ni acredita seguridad. El prompt prohíbe afirmar vulnerabilidades, malware o una verificación externa que no se realizó.
 
-Los nombres y límites se cerrarán en el schema físico. No se solicita una probabilidad de certeza. La UI obtiene títulos, canales y enlaces de fuentes curadas, no de destinos inventados por el modelo.
+Catálogo: `bank_impersonation`, `wallet_impersonation`, `credential_theft`, `advance_payment`, `account_takeover`, `family_emergency`, `mistaken_transfer`, `fake_loan`, `job_task_scam`, `prize_or_raffle`, `extortion`, `other`, `undetermined`. Son hipótesis de modalidad, no delitos probados.
 
-## Catálogo de patrones
+## Seguimiento
 
-Los tipos describen hipótesis de modalidad, no delitos probados ni patrones exclusivos de Perú. Se elige el patrón principal para orientar el siguiente paso; mencionar Yape como medio de pago no basta para clasificar suplantación de la billetera.
+Las categorías de clic, datos compartidos y pago seleccionan orientación local. Para otras preguntas, el modelo recibe `question` completo y `case` con todo el resultado disponible y selecciona una intención cerrada: `explain_signals`, `verify_identity`, `limits` u `out_of_scope`. La respuesta al usuario continúa siendo texto revisado en servidor.
 
-| Valor | Patrón | Orientación que deberá tener una acción curada |
-|---|---|---|
-| `bank_impersonation` | Mensaje que aparenta ser de un banco | Verificar desde un canal oficial de la entidad |
-| `wallet_impersonation` | Mensaje que aparenta ser de una billetera | Verificar en su app o canal oficial |
-| `credential_theft` | Pedido de claves o códigos | Protección de credenciales según política oficial |
-| `advance_payment` | Adelanto para obtener algo prometido | Verificación independiente antes de un pago |
-| `account_takeover` | Intento de tomar control de una cuenta | Recuperación y protección por el canal correspondiente |
-| `family_emergency` | Familiar con número nuevo y pedido urgente de dinero | Confirmar por un contacto previamente conocido |
-| `mistaken_transfer` | Supuesta transferencia por error y pedido de devolución | Comprobar el movimiento en la propia app y usar el procedimiento oficial |
-| `fake_loan` | Préstamo con cobro adelantado o condiciones dudosas | Verificar entidad y aviso regulatorio aplicable, si está integrado |
-| `job_task_scam` | Tareas o trabajo que exigen depositar para cobrar | Verificar la oferta y reconocer el pedido de pago |
-| `prize_or_raffle` | Premio o sorteo con cobro previo | Verificar organizador y condiciones por un canal independiente |
-| `extortion` | Amenaza o exigencia coercitiva de dinero | Derivación a ayuda especializada con canales oficiales verificados |
-| `other`, `undetermined` | Otro patrón o evidencia insuficiente | Declarar el límite de cobertura |
+La petición inicial es independiente del seguimiento. Como no se conserva el mensaje original, una pregunta posterior dispone del resultado estructurado, pero no recupera aquel texto ni una conversación completa. No se anuncia memoria semántica de todos los turnos.
 
-Ampliar el catálogo no amplía automáticamente el primer corte más allá del foco acordado en bancos y billeteras. Las acciones requieren fuentes curadas y disponibilidad real de la integración; no se inventan números de atención. Extorsión exige un protocolo específico antes de ofrecer orientación detallada.
+El adaptador alternativo `deepseek-flash` mantiene minimización y sigue sin seleccionarse para el piloto. No se afirma compatibilidad de condiciones ni rendimiento entre proveedores.
 
-## Validación y aplicación de política
+## Plazos y presupuesto implementados
 
-1. Validar tamaño, JSON, esquema, catálogos y referencias. Rechazar ids ausentes, texto excesivo o campos inesperados.
-2. Comprobar que el texto no agregue contactos, dominios o cifras sin soporte. Los contactos y enlaces de acción se renderizan desde `action_ids`; no desde texto libre del modelo.
-3. Aplicar minimización también a la salida. Mostrarla como interpretación, diferenciada de los hechos comprobados. Rechazar contenido que pida secretos o afirme una verificación no realizada.
-4. Aplicar el piso determinista. Una interpretación no borra una coincidencia verificable de alto riesgo ni convierte falta de cobertura en legitimidad.
-5. Aplicar una política asimétrica: una interpretación válida del texto puede elevar hasta `suspicious`, aunque no haya señales deterministas ni enlaces. Esa advertencia se marca como interpretación, sin presentarla como comprobación externa. Elevar a `high_risk` requiere evidencia citada que lo sustente o un patrón validado por la política; el valor de `scam_type` por sí solo no cumple ese requisito. Nunca bajar del piso de reglas.
-
-Una coincidencia en listas y una interpretación de lenguaje son clases de evidencia distintas. El modelo no crea `SourceVersion`, modifica catálogos ni produce una etiqueta de entrenamiento verdadera. Los filtros de salida y el delimitado reducen riesgo; no se presentan como defensa perfecta contra inyección.
-
-La API calcula `risk_origin` (`rules`, `model_interpretation` o `combined`) y conserva `baseline_verdict`, sin confiar esa atribución al modelo. Una salida que propone alto riesgo basándose sólo en texto queda limitada a sospechoso. Una lista vacía de ids es válida para esa interpretación; una lista que contiene ids inventados se rechaza.
-
-Caso de aceptación sintético: un mensaje de supuesto familiar con número nuevo y pedido urgente de dinero puede recibir `suspicious` por interpretación y una acción de confirmación, sin fabricar una coincidencia de phishing. Incluir también solicitudes legítimas parecidas para medir falsos positivos. Una interpretación de bajo riesgo nunca habilita una categoría de seguridad ni suprime una advertencia determinista.
-
-Si devuelve `out_of_scope`, la aplicación conserva la evaluación existente y usa una respuesta acotada para volver al caso. No aplica un cambio de veredicto por una pregunta ajena.
-
-## Aislamiento y fallos
-
-La plantilla de instrucciones es del servidor. El mensaje, las respuestas anteriores y el contenido de fuentes se incorporan como datos no confiables, separados de las instrucciones. El modelo no recibe herramientas para navegar, escribir bases, ejecutar pagos ni cambiar permisos. Una pregunta fuera del caso devuelve `out_of_scope` y propone otra consulta.
-
-Timeout, rechazo del proveedor, JSON inválido, referencias falsas, límite de presupuesto o salida no permitida mantienen el resultado por reglas. Se registra sólo la clase del fallo y las versiones, sin entrada ni salida libre. No se encadenan reintentos o llamadas de reparación sin consumir el presupuesto total acordado.
-
-## Presupuesto inicial para medir
-
-Valores propuestos para el primer experimento, pendientes de validar con el modelo elegido:
-
-| Recurso | Propuesta |
+| Recurso | Límite actual |
 |---|---|
-| Entrada al modelo | Hasta 3.000 tokens incluyendo instrucciones, señales y contexto |
-| Salida | Hasta 600 tokens y los límites de caracteres del schema |
-| Tiempo de una llamada | Hasta 8 segundos; sin retener la evidencia inicial |
-| Llamadas | Una por interpretación o turno admitido; sin reparación automática inicial |
-| Plazo de enriquecimiento del caso | Hasta 12 segundos; al vencer, finaliza con la cobertura disponible |
-| Costo | Tope configurable por operación y presupuesto global; importe pendiente de cotización y aprobación |
+| Instrucciones y entrada Contributor |65.536 bytes UTF-8 en conjunto; acepta los5.000 caracteres Unicode del formulario sin recortar |
+| Entrada del adaptador alternativo |3.000 bytes UTF-8 en conjunto |
+| Salida solicitada |600 tokens |
+| Conexión / respuesta |1s /6s, sin reintentos facturables |
+| Interpretaciones concurrentes |20 tareas supervisadas |
+| Finalización de caso pendiente |8s; señales iniciales disponibles antes |
+| Presupuesto global |200 llamadas de IA por día UTC |
 
-No se trunca a ciegas una URL o señal para cumplir el límite. Se priorizan hechos calculados y contexto reciente; si el caso no cabe de forma útil, se declara la limitación. El presupuesto de turnos y cuotas de cuenta sigue pendiente. Si el proveedor no permite estimar tokens o limitar consumo, se revisa el adaptador antes de habilitarlo.
+Meta usa `reasoning_effort=minimal`. En el corte previo, una llamada del preview quedó no disponible y conservó señales; otra del adaptador respondió HTTP200 en4.402ms. Son observaciones de aquel modo y no garantizan la latencia del nuevo contexto completo.
 
-El plazo total se propaga a las dependencias: la llamada dispone del menor tiempo entre su máximo y el restante del caso. Si no alcanza, se omite o cancela. No se descartan señales críticas para hacer caber una interpretación.
+Timeout, presupuesto agotado, rechazo, JSON inválido o caída del proveedor conservan las señales y declaran cobertura incompleta. No se repara con llamadas adicionales ni se concede un resultado verde por un fallo. Cuotas de consulta y seguimiento en [implementación](implementation.md).
 
-## Selección y evaluación
+## Decisión y configuración
 
-Comparar candidatos con el mismo conjunto de [evaluación](evaluation.md), instrucciones, presupuesto y snapshots. Medir errores peligrosos, falsos positivos, abstenciones, referencias inventadas, latencia y costo real por caso. La calidad del español y la comprensión de expresiones locales se comprueban en casos etiquetados y pruebas con usuarios.
+JP indicó expresamente que las próximas pruebas son internas de hackathon y autorizó el contexto completo. La modalidad Contributor permite entrenamiento y sus condiciones restringen datos personales, sensibles o confidenciales. El piloto se evalúa con mensajes ficticios; la autorización de JP no cambia las condiciones del proveedor. Antes del lanzamiento general se sustituirá modelo/modalidad. Referencias: [condiciones Meta](https://dev.meta.ai/legal/terms-of-service) y [modelos](https://dev.meta.ai/docs/models).
 
-Revisar conservación, uso para entrenamiento, subprocesadores, ubicación y configuración antes de enviar datos. La documentación contractual y la medición son necesarias para elegir; este contrato no selecciona proveedor ni promete compatibilidad idéntica entre APIs.
+El arranque de producción requiere `AI_PROVIDER=meta`, `AI_DATA_APPROVED=true`, `AI_INPUT_MODE=full_context` y `MODEL_API_KEY`. Se debe publicar primero la imagen compatible y actualizar sólo esos campos del runtime, sin regenerar secretos. La versión pública anterior bloquea Meta. Runbook canónico en `devops-agents`; no habilitado en AWS por este cambio local.
 
-## Candidatos indicados por JP (17-oct-2026)
+Muse Spark admite entrada multimodal, pero esta app sólo integra texto y enlaces. No se anuncia recepción de capturas, lectura de HTML o ejecución de JavaScript. Referencias: [audio y vídeo](https://dev.meta.ai/docs/video-understanding), [razonamiento](https://dev.meta.ai/docs/reasoning).
 
-El adaptador llama al proveedor directamente por HTTPS desde Phoenix; no necesita Bedrock ni un SDK de OpenAI para adoptar un contrato HTTP compatible. Guardar proveedor, modelo solicitado y versión reportada junto a la evaluación reproducible. Un alias que cambia no equivale a una versión congelada.
+## Verificación
 
-Meta documenta que el contenido de la modalidad Contributor puede utilizarse para entrenar futuros modelos. Por ello, la propuesta limita `muse-spark-1.3-contributor` a casos sintéticos de evaluación hasta acordar expresamente ese tratamiento. La minimización no garantiza eliminar todos los datos personales. Ver [modalidades de Muse Spark](https://dev.meta.ai/docs/models).
+Las pruebas inspeccionan igualdad del mensaje y análisis completos, transmisión íntegra de5.000 caracteres Unicode, contexto de preguntas y captura asíncrona sin persistir el original. Se conservan pruebas de piso de reglas, citas inventadas y límite de sospecha por interpretación. Sólo se usan fixtures sintéticos en llamadas externas.
 
-`deepseek-flash` sigue como candidato para el producto. Antes de habilitar mensajes reales, contrastar condiciones específicas de la API sobre conservación, entrenamiento, transferencias y subprocesadores; una política del chat de consumo no acredita las condiciones de una integración. El identificador se contrasta en [los modelos de DeepSeek](https://api-docs.deepseek.com/api/list-models/). Todavía no se afirma una política de no entrenamiento ni se ha ejecutado la comparación de calidad/costo.
+Falta evaluar falsos positivos, abstenciones, latencia y costo con un corpus etiquetado. Ver [evaluación](evaluation.md).
+
+Integración del nuevo modo: el ejemplo bancario ficticio ejecutado desde Chrome terminó con analysis_status=completed, analysis_mode=signals_and_ai y coverage.ai=completed. Se conservó el alto riesgo de reglas.

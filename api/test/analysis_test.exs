@@ -3,6 +3,10 @@ defmodule EverydayTrust.AnalysisTest do
   alias EverydayTrust.{Analysis, Signals, Interpreter}
 
   setup do
+    Application.put_env(:everyday_trust, :test_destination_dns, fn _ -> {:error, :unavailable} end)
+
+    on_exit(fn -> Application.delete_env(:everyday_trust, :test_destination_dns) end)
+    on_exit(fn -> Application.delete_env(:everyday_trust, :test_destination_head) end)
     on_exit(fn -> Application.delete_env(:everyday_trust, :test_http) end)
     on_exit(fn -> Application.put_env(:everyday_trust, :network_checks, false) end)
     :ok
@@ -14,6 +18,33 @@ defmodule EverydayTrust.AnalysisTest do
       assert result["verdict"] == "no_signals_detected"
       assert result["rules_score"] == 0
     end
+  end
+
+  test "a failed site check cannot produce a green result" do
+    Application.put_env(:everyday_trust, :network_checks, true)
+    result = Analysis.run("https://www.viabcp.com")
+    assert result["verdict"] == "inconclusive"
+    assert result["coverage"]["destination"] == "partial"
+  end
+
+  test "root redirects retain brand imitation signals from the next site" do
+    Application.put_env(:everyday_trust, :network_checks, true)
+
+    Application.put_env(:everyday_trust, :test_destination_dns, fn _ ->
+      {:ok, [{93, 184, 216, 34}]}
+    end)
+
+    Application.put_env(:everyday_trust, :test_destination_head, fn uri, _ ->
+      if uri.host == "www.viabcp.com",
+        do: {:ok, 302, "https://bcp-acceso.example/private?person=SECRET"},
+        else: {:ok, 200, nil}
+    end)
+
+    result = Analysis.run("https://www.viabcp.com")
+    assert result["verdict"] == "suspicious"
+    assert Enum.any?(result["signals"], &(&1["id"] == "brand_lookalike"))
+    assert hd(result["domains"])["checked_hosts"] == ["viabcp.com", "bcp-acceso.example"]
+    refute Jason.encode!(result) =~ "SECRET"
   end
 
   for url <- [

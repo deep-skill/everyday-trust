@@ -108,19 +108,20 @@ hide stereotype
 person "==Operador\n<size:16>[Person]</size>\n\nMantiene fuentes, costos y funcionamiento sin leer mensajes en logs." <<Element-RWxlbWVudCxQZXJzb24=>> as Operador
 
 rectangle "==Servicio de identidad\n<size:16>[Software System]</size>\n\nRegistro, confirmación, recuperación y acceso con Amazon Cognito." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Serviciodeidentidad
-rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nAPI directa: Muse Spark 1.3 Contributor o deepseek-flash; elección y condiciones pendientes." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as ProveedordeIA
-rectangle "==Fuentes verificables\n<size:16>[Software System]</size>\n\nPáginas oficiales de marcas, avisos SBS, feeds de phishing y RDAP, con procedencia." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Fuentesverificables
+rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nMuse Spark 1.3 Contributor con mensaje completo y evidencia; piloto interno, publicación pendiente." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as ProveedordeIA
+rectangle "==Sitios consultados\n<size:16>[Software System]</size>\n\nRaíz pública mediante HEAD, DNS/IP fijados, redirecciones limitadas; sin HTML ni JavaScript." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Sitiosconsultados
+rectangle "==Fuentes verificables\n<size:16>[Software System]</size>\n\nDominios oficiales, Phishing.Database y RDAP; otras fuentes por integrar." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Fuentesverificables
 
 rectangle "Verificador de mensajes\n<size:16>[Software System]</size>" <<Boundary-VmVyaWZpY2Fkb3IgZGUgbWVuc2FqZXM=>> {
   rectangle "API\n<size:16>[Container: Elixir / Phoenix; release OTP]</size>" <<Boundary-QVBJ>> {
+    rectangle "==Acceso y cuotas\n<size:16>[Component: Módulo de aplicación]</size>\n\nValida identidad, titularidad de casos temporales y presupuesto de operaciones." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Accesoycuotas
     rectangle "==Casos\n<size:16>[Component: Módulo de aplicación]</size>\n\nEntrega evidencia inicial, coordina actualizaciones y mantiene contexto minimizado y cobertura." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Casos
-    rectangle "==Señales verificables\n<size:16>[Component: Módulo de aplicación]</size>\n\nComprueba dominios y fuentes con red restringida y caché." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Señalesverificables
+    rectangle "==Señales verificables\n<size:16>[Component: Módulo de aplicación]</size>\n\nComprueba dominios, fuentes y raíces públicas con red restringida." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Señalesverificables
     rectangle "==Minimización de datos\n<size:16>[Component: Módulo de aplicación]</size>\n\nPrepara contexto permitido antes del modelo, estado temporal y guardado; valida también las salidas." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Minimizacióndedatos
     rectangle "==Política de riesgo\n<size:16>[Component: Módulo de aplicación]</size>\n\nConserva el piso de reglas; limita a sospechoso una elevación sólo por interpretación." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Políticaderiesgo
-    rectangle "==Interpretación y seguimiento\n<size:16>[Component: Adaptador de IA]</size>\n\nAísla el proveedor de IA, valida salidas y acota el seguimiento al caso." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Interpretaciónyseguimiento
+    rectangle "==Interpretación y seguimiento\n<size:16>[Component: Adaptador de IA]</size>\n\nContributor recibe mensaje completo y evidencia del piloto interno; salidas e intenciones validadas." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Interpretaciónyseguimiento
     rectangle "==Historial\n<size:16>[Component: Módulo de aplicación]</size>\n\nGuarda resúmenes saneados y controla lectura y borrado por propietario." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Historial
-    rectangle "==Ingesta de fuentes\n<size:16>[Component: Trabajos del backend; ejecución pendiente]</size>\n\nValida snapshots; revisa dominios, canales y políticas oficiales antes de publicar." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Ingestadefuentes
-    rectangle "==Acceso y cuotas\n<size:16>[Component: Módulo de aplicación]</size>\n\nValida identidad, titularidad de casos temporales y presupuesto de operaciones." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Accesoycuotas
+    rectangle "==Ingesta de fuentes\n<size:16>[Component: Comando operativo; snapshots atómicos]</size>\n\nValida snapshots; revisa dominios, canales y políticas oficiales antes de publicar." <<Element-RWxlbWVudCxDb21wb25lbnQ=>> as Verificadordemensajes.API.Ingestadefuentes
   }
 
   database "==Datos persistentes\n<size:16>[Container: PostgreSQL en Amazon RDS]</size>\n\nHistorial, catálogos y evidencia; sesiones BFF en esquema y rol propios." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as Verificadordemensajes.Datospersistentes
@@ -137,12 +138,13 @@ Verificadordemensajes.API.Accesoycuotas --> Verificadordemensajes.API.Casos <<Re
 Verificadordemensajes.API.Accesoycuotas --> Verificadordemensajes.API.Historial <<Relationship-UmVsYXRpb25zaGlw>> : "Autoriza historial"
 Verificadordemensajes.API.Casos --> Verificadordemensajes.API.Señalesverificables <<Relationship-UmVsYXRpb25zaGlw>> : "Analiza"
 Verificadordemensajes.API.Señalesverificables --> Fuentesverificables <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta evidencia\n<size:16>[HTTPS]</size>"
+Verificadordemensajes.API.Señalesverificables --> Sitiosconsultados <<Relationship-UmVsYXRpb25zaGlw>> : "HEAD de raíz; revalida cada salto\n<size:16>[HTTP(S) / IP fijada]</size>"
 Verificadordemensajes.API.Señalesverificables --> Verificadordemensajes.Datospersistentes <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta snapshots y versiones"
 Verificadordemensajes.API.Casos --> Verificadordemensajes.API.Políticaderiesgo <<Relationship-UmVsYXRpb25zaGlw>> : "Evalúa riesgo"
 Verificadordemensajes.API.Casos --> Verificadordemensajes.API.Minimizacióndedatos <<Relationship-UmVsYXRpb25zaGlw>> : "Minimiza contexto"
 Verificadordemensajes.API.Casos --> Verificadordemensajes.API.Interpretaciónyseguimiento <<Relationship-UmVsYXRpb25zaGlw>> : "Explica"
 Verificadordemensajes.API.Interpretaciónyseguimiento --> Verificadordemensajes.API.Minimizacióndedatos <<Relationship-UmVsYXRpb25zaGlw>> : "Valida entrada y salida"
-Verificadordemensajes.API.Interpretaciónyseguimiento --> ProveedordeIA <<Relationship-UmVsYXRpb25zaGlw>> : "Envía contexto permitido\n<size:16>[HTTPS]</size>"
+Verificadordemensajes.API.Interpretaciónyseguimiento --> ProveedordeIA <<Relationship-UmVsYXRpb25zaGlw>> : "Envía contexto completo del piloto\n<size:16>[HTTPS]</size>"
 Verificadordemensajes.API.Casos --> Verificadordemensajes.Estadotemporalycuotas <<Relationship-UmVsYXRpb25zaGlw>> : "Mantiene etapas y contexto"
 Verificadordemensajes.API.Historial --> Verificadordemensajes.Estadotemporalycuotas <<Relationship-UmVsYXRpb25zaGlw>> : "Comprueba caso y acceso"
 Verificadordemensajes.API.Historial --> Verificadordemensajes.API.Minimizacióndedatos <<Relationship-UmVsYXRpb25zaGlw>> : "Restringe campos"

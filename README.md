@@ -8,11 +8,11 @@ El usuario consulta sin cuenta y recibe señales, un resumen y un siguiente paso
 
 ## Estado comprobable
 
-Implementación desplegada en AWS en una red privada: SvelteKit/TypeScript/Tailwind, BFF Node, API Elixir/Phoenix, RDS PostgreSQL y Cognito Essentials. Incluye OIDC/PKCE, cookies opacas, tokens cifrados, autorización por propietario, cuotas atómicas, vencimiento y borrado. Hay 67 pruebas Phoenix, 45 Node y 29 comprobaciones de navegador con identidad simulada. Otras 12 comprobaciones integran Cognito y RDS reales con dos cuentas sintéticas, eliminadas al finalizar y sin envío de emails/SMS. El recorrido OIDC completo en navegador contra AWS sigue pendiente.
+Web pública: **[verifica.deepskill.space](https://verifica.deepskill.space)**. Implementación desplegada en AWS: SvelteKit/TypeScript/Tailwind, BFF Node, API Elixir/Phoenix, RDS PostgreSQL privado y Cognito Essentials. Incluye OIDC/PKCE, cookies opacas, tokens cifrados, autorización por propietario, cuotas atómicas, vencimiento y borrado. El último corte local tiene 102 pruebas Phoenix y 45 Node aprobadas. La suite de navegador acreditó previamente 29 comprobaciones con identidad simulada; no se volvió a ejecutar completa en este refinamiento. Otras 12 comprobaciones integran Cognito y RDS reales con dos cuentas sintéticas, eliminadas al finalizar y sin envío de emails/SMS. El recorrido OIDC completo en navegador contra AWS sigue pendiente.
 
-La ingesta de Phishing.Database valida snapshots y publica una versión atómica. El snapshot contrastado fue publicado el 2-oct: se trata como histórico y no como una comprobación vigente del día. El resultado muestra cobertura y fechas. Los adaptadores directos de IA están escritos; todavía no se han activado con mensajes reales.
+La ingesta de Phishing.Database valida snapshots y publica una versión atómica. El snapshot contrastado fue publicado el 2-oct: se trata como histórico y no como una comprobación vigente del día. La API conserva cobertura y fechas; la interfaz explica sus límites en lenguaje sencillo. El piloto interno de hackathon usa Contributor con el mensaje completo y todos los resultados de comprobación, por decisión expresa de JP. El original no se guarda en el historial; antes del lanzamiento general se cambiará el modelo/modalidad. La IA pública permanece desactivada hasta publicar ese corte.
 
-CI, imágenes amd64 en GHCR y despliegue AWS por OIDC/SSM ejecutados correctamente. EC2 no tiene puertos entrantes. El acceso público por Cloudflare Tunnel está pendiente de un token con permisos de escritura. La [implementación](docs/architecture/implementation.md) distingue estas capacidades de la [arquitectura objetivo](docs/architecture/aws-deployment.md).
+CI, imágenes amd64 en GHCR y despliegue AWS por OIDC/SSM ejecutados correctamente. EC2 no tiene puertos entrantes; Cloudflare Tunnel sirve el acceso público. Se verificaron la página y una consulta anónima en Chrome, además de HTTPS, CSP, consulta por API y redirección PKCE a Cognito. La [implementación](docs/architecture/implementation.md) distingue estas capacidades de la [arquitectura objetivo](docs/architecture/aws-deployment.md).
 
 ## Desarrollo local
 
@@ -59,7 +59,7 @@ Se puede indicar el Python con Playwright instalado mediante E2E_PYTHON. Los hel
 
 ## Configuración de producción
 
-Web: API_BASE_URL, API_SERVICE_TOKEN, WEB_DATABASE_URL, DATABASE_CA_FILE, COGNITO_ISSUER/CLIENT_ID/DOMAIN y SESSION_ENCRYPTION_KEY de 32 bytes en base64. La imagen de producción exige COGNITO_CLIENT_SECRET y ORIGIN HTTPS. API: DATABASE_URL, DATABASE_CA_FILE, SECRET_KEY_BASE, API_SERVICE_TOKEN y los mismos issuer/client id. Ver plantillas de entorno y [decisiones implementadas](docs/architecture/implementation.md).
+Web: API_BASE_URL, API_SERVICE_TOKEN, WEB_DATABASE_URL, DATABASE_CA_FILE, COGNITO_ISSUER/CLIENT_ID/DOMAIN y SESSION_ENCRYPTION_KEY de 32 bytes en base64. La imagen de producción exige COGNITO_CLIENT_SECRET y ORIGIN HTTPS. API: DATABASE_URL, DATABASE_CA_FILE, SECRET_KEY_BASE, API_SERVICE_TOKEN y los mismos issuer/client id. Contributor requiere AI_PROVIDER=meta, AI_DATA_APPROVED=true, AI_INPUT_MODE=full_context y MODEL_API_KEY; el piloto envía el mensaje y las preguntas completos, junto con la evidencia disponible. Ver plantillas de entorno y [decisiones implementadas](docs/architecture/implementation.md).
 
 Las URLs PostgreSQL no incluyen opciones SSL: se configura una CA explícita con verificación de hostname. Las credenciales de migración se separan de los roles de ejecución; el BFF sólo accede al esquema de sesiones. Ningún secreto entra en las imágenes.
 
@@ -69,6 +69,6 @@ Producción usa RDS privado y EC2/Docker/Nginx/Cloudflare Tunnel según el [diag
 
 [Negocio, VSM, UX, arquitectura y datos](docs/README.md), [implementación](docs/architecture/implementation.md), [fuentes e ingesta](docs/architecture/source-ingestion.md) e [identidad visual](docs/design/brand.md). Fuentes editables de diagramas en PlantUML y [Structurizr DSL](docs/architecture/workspace.dsl).
 
-Las consultas no autentican al remitente ni garantizan seguridad. Sólo se siguen acortadores permitidos y se detienen antes del destino final; una dependencia fallida o una fuente histórica no habilitan un resultado verde. El endpoint anterior POST /api/analyze está retirado y devuelve 410; el flujo actual usa /api/v1/cases.
+Las consultas no autentican al remitente ni garantizan seguridad. El corte local resuelve acortadores permitidos y comprueba la raíz de los sitios mediante HEAD, con DNS/IP públicos fijados y redirecciones limitadas. Omite rutas y parámetros del destino, no analiza HTML ni ejecuta JavaScript; una dependencia fallida o una fuente histórica no habilitan un resultado verde. El endpoint anterior POST /api/analyze está retirado y devuelve 410; el flujo actual usa /api/v1/cases.
 
 La API también publica métricas agregadas en `/api/v1/stats`, separando ejemplos de consultas. Ver [estado de implementación](docs/architecture/implementation.md).

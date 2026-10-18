@@ -48,7 +48,10 @@ defmodule EverydayTrust.Threats do
           is_nil(version.published_at) ||
             DateTime.diff(DateTime.utc_now(), version.published_at) > 604_800
 
-        hosts = Enum.map(findings, & &1["hostname"]) |> Enum.reject(&is_nil/1)
+        hosts =
+          Enum.flat_map(findings, &Map.get(&1, "checked_hosts", [&1["hostname"]]))
+          |> Enum.reject(&is_nil/1)
+          |> Enum.uniq()
 
         matched =
           Repo.all(
@@ -60,7 +63,15 @@ defmodule EverydayTrust.Threats do
 
         items =
           Enum.map(findings, fn finding ->
-            status = matched[finding["hostname"]]
+            statuses =
+              Enum.map(Map.get(finding, "checked_hosts", [finding["hostname"]]), &matched[&1])
+
+            status =
+              cond do
+                "active" in statuses -> "active"
+                "needs_review" in statuses -> "needs_review"
+                true -> nil
+              end
 
             signal =
               case status do

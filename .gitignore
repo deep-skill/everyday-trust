@@ -18,6 +18,8 @@ api/cover/
 api/erl_crash.dump
 playwright-report/
 test-results/
+__pycache__/
+*.pyc
 
 # Local-only context and raw downloads (never published)
 .analisis/

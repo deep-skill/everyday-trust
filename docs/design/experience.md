@@ -74,3 +74,23 @@ Referencia: [WCAG 2.2](https://www.w3.org/TR/WCAG22/).
 ## Primer corte implementado
 
 Consulta, resultado, orientación acotada, cuenta, guardado e historial ya tienen una implementación local en `src/` y `api/`. Ver [implementación](../architecture/implementation.md) para límites y pruebas. Las láminas anteriores siguen siendo la propuesta visual; las capturas con prefijo `app-` en `rendered/` corresponden a la app ejecutada con ejemplos sintéticos. El acceso se prueba con identidad simulada, sin acreditar Cognito real.
+
+## Ajustes tras la prueba desplegada de JP, 17-oct
+
+Implementados localmente, pendientes de publicación:
+
+- La portada explica la suplantación de bancos, empresas y familiares antes de pedir un mensaje. «Revisar un mensaje» lleva directamente al formulario; «Cómo funciona» abre `/como-funciona`, con la guía de tres pasos, ejemplos y preguntas frecuentes. La pantalla del verificador conserva sólo la introducción breve y el formulario.
+- La guía incluye ejemplos ficticios y preguntas frecuentes sobre cuenta, privacidad, enlaces, límites y formatos. La explicación bancaria enlaza la [fuente oficial del BCP](https://www.viabcp.com/seguridad/informate), consultada el17-oct. La interfaz no atribuye un respaldo del banco al proyecto.
+- El resultado prioriza advertencia y siguiente paso. «¿Por qué este resultado?» presenta motivos independientes numerados, un título y una explicación breve por tarjeta, todos con texto de16px. Las direcciones comprobadas y los límites aparecen separados, sin terminología de feeds ni fechas de descarga; «¿Necesitas más ayuda con este mensaje?» ofrece orientación según clic, datos compartidos o pago.
+- Texto principal de16px y notas de14px. La cifra de turnos se conserva como límite del servicio y se explica cuando se alcanza, sin mostrar un contador desde la primera respuesta.
+- «Guardar resultado» explica la continuidad mediante historial. La cuenta aparece al intentar guardar y devuelve al caso para confirmar el guardado voluntario.
+- Se retiraron las métricas diarias del pie y su consulta automática. El endpoint agregado sigue disponible para evidencia del evento, sin texto ni identidades.
+
+Capturas: aún sin carga de archivos. La capacidad visual del modelo no habilita por sí sola el flujo de recepción, validación, minimización y descarte. No se anuncia como una función implementada. La columna izquierda se limita al alto de la ventana y mantiene navegación y beneficio de cuenta; se retiró la frase decorativa que se estiraba al crecer el contenido. La revisión de enlaces consulta señales del dominio, registro y alertas; resuelve acortadores permitidos y comprueba la raíz de los sitios mediante HEAD con redirecciones entre dominios. No visita la ruta concreta del mensaje, no analiza HTML ni ejecuta contenido. Que un sitio responda no equivale a seguridad.
+
+
+### Ajuste posterior: ejemplos sólo en la guía
+
+Se retiró «¿Prefieres probar primero?» del home. Las tarjetas bancaria y familiar de `/como-funciona` ofrecen «Probar este ejemplo». El enlace usa un identificador conocido y prepara el texto ficticio en el formulario; no crea una consulta ni llama al proveedor hasta pulsar «Revisar mensaje». No se añadió otro bloque de ejemplos. El servidor continúa reconociendo esos textos como demostraciones, separados de consultas reales.
+
+JP limitó el uso de Contributor a pruebas internas de hackathon y pidió enviar el mensaje completo junto con las comprobaciones. La página de datos informa ese flujo y la sustitución del modelo/modalidad antes de abrir al público general. Una sospecha interpretada sin señales locales no se presenta como vulnerabilidad confirmada.

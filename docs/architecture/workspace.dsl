@@ -1,22 +1,23 @@
-workspace "Verificador de mensajes" "Stack confirmado; despliegue AWS propuesto y todavía sin aprovisionar" {
+workspace "Verificador de mensajes" "AWS desplegado; comprobación HEAD y Contributor de contexto completo para piloto interno en el corte local" {
     model {
         visitor = person "Persona que consulta" "Evalúa un mensaje y decide su siguiente acción, con o sin cuenta."
         operator = person "Operador" "Mantiene fuentes, costos y funcionamiento sin leer mensajes en logs."
         identity = softwareSystem "Servicio de identidad" "Registro, confirmación, recuperación y acceso con Amazon Cognito."
-        intelligence = softwareSystem "Proveedor de IA" "API directa: Muse Spark 1.3 Contributor o deepseek-flash; elección y condiciones pendientes."
-        sources = softwareSystem "Fuentes verificables" "Páginas oficiales de marcas, avisos SBS, feeds de phishing y RDAP, con procedencia."
+        intelligence = softwareSystem "Proveedor de IA" "Muse Spark 1.3 Contributor con mensaje completo y evidencia; piloto interno, publicación pendiente."
+        sites = softwareSystem "Sitios consultados" "Raíz pública mediante HEAD, DNS/IP fijados, redirecciones limitadas; sin HTML ni JavaScript."
+        sources = softwareSystem "Fuentes verificables" "Dominios oficiales, Phishing.Database y RDAP; otras fuentes por integrar."
 
         product = softwareSystem "Verificador de mensajes" "Señales, explicación y ayuda ante mensajes sospechosos para personas en Perú." {
             web = container "Web" "Consulta abierta, resultado, seguimiento e historial privado." "SvelteKit / TypeScript / Tailwind; BFF Node.js"
             api = container "API" "Acceso, análisis, conversación, cuotas e historial." "Elixir / Phoenix; release OTP" {
                 access = component "Acceso y cuotas" "Valida identidad, titularidad de casos temporales y presupuesto de operaciones." "Módulo de aplicación"
                 cases = component "Casos" "Entrega evidencia inicial, coordina actualizaciones y mantiene contexto minimizado y cobertura." "Módulo de aplicación"
-                signals = component "Señales verificables" "Comprueba dominios y fuentes con red restringida y caché." "Módulo de aplicación"
+                signals = component "Señales verificables" "Comprueba dominios, fuentes y raíces públicas con red restringida." "Módulo de aplicación"
                 privacy = component "Minimización de datos" "Prepara contexto permitido antes del modelo, estado temporal y guardado; valida también las salidas." "Módulo de aplicación"
                 policy = component "Política de riesgo" "Conserva el piso de reglas; limita a sospechoso una elevación sólo por interpretación." "Módulo de aplicación"
-                conversation = component "Interpretación y seguimiento" "Aísla el proveedor de IA, valida salidas y acota el seguimiento al caso." "Adaptador de IA"
+                conversation = component "Interpretación y seguimiento" "Contributor recibe mensaje completo y evidencia del piloto interno; salidas e intenciones validadas." "Adaptador de IA"
                 history = component "Historial" "Guarda resúmenes saneados y controla lectura y borrado por propietario." "Módulo de aplicación"
-                ingestion = component "Ingesta de fuentes" "Valida snapshots; revisa dominios, canales y políticas oficiales antes de publicar." "Trabajos del backend; ejecución pendiente"
+                ingestion = component "Ingesta de fuentes" "Valida snapshots; revisa dominios, canales y políticas oficiales antes de publicar." "Comando operativo; snapshots atómicos"
             }
             database = container "Datos persistentes" "Historial, catálogos y evidencia; sesiones BFF en esquema y rol propios." "PostgreSQL en Amazon RDS" {
                 tags "Database"
@@ -33,8 +34,9 @@ workspace "Verificador de mensajes" "Stack confirmado; despliegue AWS propuesto 
         web -> identity "Gestiona acceso" "OIDC / Code + PKCE"
         web -> database "Sesiones BFF cifradas" "PostgreSQL / TLS; rol propio"
         api -> identity "Obtiene claves públicas" "HTTPS / OIDC"
-        api -> intelligence "Interpreta contexto minimizado" "HTTPS"
+        api -> intelligence "Interpreta mensaje y comprobaciones" "HTTPS"
         api -> sources "Consulta evidencia" "HTTPS"
+        api -> sites "Comprueba raíces públicas; corte local" "HEAD / DNS e IP validados"
         api -> database "Lee y guarda datos" "Conexión protegida"
         api -> temporary "Casos y cuotas" "Conexión protegida"
         operator -> evaluator "Revisa calidad y costos"
@@ -47,12 +49,13 @@ workspace "Verificador de mensajes" "Stack confirmado; despliegue AWS propuesto 
         access -> history "Autoriza historial"
         cases -> signals "Analiza"
         signals -> sources "Consulta evidencia" "HTTPS"
+        signals -> sites "HEAD de raíz; revalida cada salto" "HTTP(S) / IP fijada"
         signals -> database "Consulta snapshots y versiones"
         cases -> policy "Evalúa riesgo"
         cases -> privacy "Minimiza contexto"
         cases -> conversation "Explica"
         conversation -> privacy "Valida entrada y salida"
-        conversation -> intelligence "Envía contexto permitido" "HTTPS"
+        conversation -> intelligence "Envía contexto completo del piloto" "HTTPS"
         cases -> temporary "Mantiene etapas y contexto"
         history -> temporary "Comprueba caso y acceso"
         history -> privacy "Restringe campos"
@@ -60,18 +63,18 @@ workspace "Verificador de mensajes" "Stack confirmado; despliegue AWS propuesto 
         operator -> ingestion "Aprueba catálogos"
         ingestion -> sources "Obtiene snapshots" "HTTPS / fuentes configuradas"
         ingestion -> database "Valida y publica versiones"
-        production = deploymentEnvironment "AWS propuesta" {
+        production = deploymentEnvironment "AWS" {
             deploymentNode "Cloudflare" "Borde público; funciones sujetas al plan." "Cloudflare" {
                 edge = infrastructureNode "DNS, HTTPS y WAF" "Mitiga tráfico antes del origen." "Cloudflare Free; reglas limitadas"
             }
-            deploymentNode "GitHub" "Entrega propuesta; no hay workflows activos de esta arquitectura." "GitHub" {
+            deploymentNode "GitHub" "CI, GHCR y despliegue OIDC/SSM operativos." "GitHub" {
                 ci = infrastructureNode "GitHub Actions" "Checks, build y publicación por commit." "Runner Linux amd64"
                 registry = infrastructureNode "GHCR" "Imágenes web y API identificadas por digest." "OCI Registry"
             }
-            deploymentNode "AWS / us-east-1" "Primera región propuesta." "Amazon Web Services" {
+            deploymentNode "AWS / us-east-1" "Región de despliegue." "Amazon Web Services" {
                 deploymentNode "VPC" "Aplicaciones y datos con security groups separados." "Amazon VPC" {
                     deploymentNode "Subred de aplicación" "Ruta a Internet; IPv4 de salida, sin ingreso al SG." "Subnet" {
-                        deploymentNode "EC2 / Docker Compose" "Un host T3a propuesto; sin alta disponibilidad." "Linux amd64 / t3a.medium" {
+                        deploymentNode "EC2 / Docker Compose" "Un host T3a desplegado; sin alta disponibilidad." "Linux amd64 / t3a.medium" {
                             tunnel = infrastructureNode "cloudflared" "Conexión saliente al borde." "Contenedor; túnel nombrado"
                             gateway = infrastructureNode "Nginx" "Límites, cabeceras y rutas al BFF." "Contenedor; puerto interno 8080"
                             webInstance = containerInstance web
@@ -86,15 +89,15 @@ workspace "Verificador de mensajes" "Stack confirmado; despliegue AWS propuesto 
                         }
                     }
                 }
-                deploymentNode "Cognito User Pool" "Identidad gestionada; pendiente de crear." "Amazon Cognito" {
+                deploymentNode "Cognito User Pool" "Identidad gestionada; OIDC interactivo completo pendiente." "Amazon Cognito" {
                     softwareSystemInstance identity
                 }
                 secrets = infrastructureNode "Parameter Store" "Secretos cifrados y acceso mediante Instance Profile." "SSM SecureString"
-                logs = infrastructureNode "CloudWatch" "Logs saneados, métricas y alarmas." "Amazon CloudWatch"
+                logs = infrastructureNode "CloudWatch" "Grupo de logs creado; alarmas y operación ampliada pendientes." "Amazon CloudWatch"
                 artifacts = infrastructureNode "S3 privado" "Artefactos versionados y snapshots de fuentes permitidas." "Amazon S3"
                 oidc = infrastructureNode "IAM / OIDC" "Confianza restringida a repo y rama o environment." "AWS IAM"
             }
-            deploymentNode "API externa de IA" "Proveedor pendiente; sólo contexto permitido." "HTTPS" {
+            deploymentNode "API externa de IA" "Contributor del piloto interno; desactivado en AWS hasta publicar el corte." "HTTPS" {
                 softwareSystemInstance intelligence
             }
             ci -> registry "Publica imágenes por SHA/digest" "HTTPS"
@@ -131,7 +134,7 @@ workspace "Verificador de mensajes" "Stack confirmado; despliegue AWS propuesto 
             autoLayout tb 300 220
         }
         deployment * production "AwsDeployment" {
-            title "AWS propuesto: EC2, RDS, Cognito y entrega con Actions/GHCR"
+            title "AWS: EC2, RDS, Cognito y entrega con Actions/GHCR"
             include *
             autoLayout lr
         }

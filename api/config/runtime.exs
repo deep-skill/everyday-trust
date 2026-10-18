@@ -26,8 +26,8 @@ if config_env() == :prod do
   System.fetch_env!("COGNITO_ISSUER")
   System.fetch_env!("COGNITO_CLIENT_ID")
 
-  if System.get_env("AI_PROVIDER") == "meta",
-    do: raise("Contributor models are restricted to offline evaluation")
+  if System.get_env("AI_PROVIDER") == "meta" && System.get_env("AI_INPUT_MODE") != "full_context",
+    do: raise("The internal Meta pilot requires AI_INPUT_MODE=full_context")
 
   config :everyday_trust, service_token: token
 end

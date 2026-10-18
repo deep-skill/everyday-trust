@@ -55,6 +55,20 @@ defmodule EverydayTrust.ThreatsTest do
     assert Repo.one(from v in ThreatVersion, where: v.active).id == first.version
   end
 
+  test "an alert on an intermediate checked host is retained", %{feed_file: file} do
+    {:ok, _} = load(file, ["reported.example.com"])
+
+    finding = %{
+      "hostname" => "final.example.com",
+      "checked_hosts" => ["first.example.com", "reported.example.com", "final.example.com"],
+      "signals" => []
+    }
+
+    assert {[result], "completed"} = Threats.enrich([finding])
+    assert result["feed_status"] == "match"
+    assert Enum.any?(result["signals"], &(&1["id"] == "reported_phishing"))
+  end
+
   test "expired or absent feed does not produce a green result", %{feed_file: file} do
     assert Analysis.run("https://www.viabcp.com", feed: true)["verdict"] == "inconclusive"
     {:ok, _} = load(file, ["reported.example.com"])

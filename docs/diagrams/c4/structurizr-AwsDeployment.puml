@@ -1,5 +1,5 @@
 @startuml
-title <size:24>AWS propuesto: EC2, RDS, Cognito y entrega con Actions/GHCR</size>
+title <size:24>AWS: EC2, RDS, Cognito y entrega con Actions/GHCR</size>
 
 set separator none
 left to right direction
@@ -82,72 +82,72 @@ hide stereotype
   }
 </style>
 
-rectangle "Cloudflare\n<size:16>[Deployment Node: Cloudflare]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWSpropuesta.Cloudflare {
-  rectangle "==DNS, HTTPS y WAF\n<size:16>[Infrastructure Node: Cloudflare Free; reglas limitadas]</size>\n\nMitiga tráfico antes del origen." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWSpropuesta.Cloudflare.DNSHTTPSyWAF
+rectangle "Cloudflare\n<size:16>[Deployment Node: Cloudflare]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWS.Cloudflare {
+  rectangle "==DNS, HTTPS y WAF\n<size:16>[Infrastructure Node: Cloudflare Free; reglas limitadas]</size>\n\nMitiga tráfico antes del origen." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWS.Cloudflare.DNSHTTPSyWAF
 }
 
-rectangle "GitHub\n<size:16>[Deployment Node: GitHub]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWSpropuesta.GitHub {
-  rectangle "==GitHub Actions\n<size:16>[Infrastructure Node: Runner Linux amd64]</size>\n\nChecks, build y publicación por commit." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWSpropuesta.GitHub.GitHubActions
-  rectangle "==GHCR\n<size:16>[Infrastructure Node: OCI Registry]</size>\n\nImágenes web y API identificadas por digest." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWSpropuesta.GitHub.GHCR
+rectangle "GitHub\n<size:16>[Deployment Node: GitHub]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWS.GitHub {
+  rectangle "==GitHub Actions\n<size:16>[Infrastructure Node: Runner Linux amd64]</size>\n\nChecks, build y publicación por commit." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWS.GitHub.GitHubActions
+  rectangle "==GHCR\n<size:16>[Infrastructure Node: OCI Registry]</size>\n\nImágenes web y API identificadas por digest." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWS.GitHub.GHCR
 }
 
-rectangle "AWS / us-east-1\n<size:16>[Deployment Node: Amazon Web Services]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWSpropuesta.AWSuseast1 {
-  rectangle "VPC\n<size:16>[Deployment Node: Amazon VPC]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWSpropuesta.AWSuseast1.VPC {
-    rectangle "Subred de aplicación\n<size:16>[Deployment Node: Subnet]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación {
-      rectangle "EC2 / Docker Compose\n<size:16>[Deployment Node: Linux amd64 / t3a.medium]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose {
-        rectangle "==cloudflared\n<size:16>[Infrastructure Node: Contenedor; túnel nombrado]</size>\n\nConexión saliente al borde." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.cloudflared
-        rectangle "==Nginx\n<size:16>[Infrastructure Node: Contenedor; puerto interno 8080]</size>\n\nLímites, cabeceras y rutas al BFF." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Nginx
-        rectangle "==Web\n<size:16>[Container: SvelteKit / TypeScript / Tailwind; BFF Node.js]</size>\n\nConsulta abierta, resultado, seguimiento e historial privado." <<Element-RWxlbWVudCxDb250YWluZXI=>> as AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1
-        rectangle "==API\n<size:16>[Container: Elixir / Phoenix; release OTP]</size>\n\nAcceso, análisis, conversación, cuotas e historial." <<Element-RWxlbWVudCxDb250YWluZXI=>> as AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1
-        rectangle "==SSM Agent\n<size:16>[Infrastructure Node: Amazon SSM]</size>\n\nDespliegue acotado, sin SSH público." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.SSMAgent
+rectangle "AWS / us-east-1\n<size:16>[Deployment Node: Amazon Web Services]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWS.AWSuseast1 {
+  rectangle "VPC\n<size:16>[Deployment Node: Amazon VPC]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWS.AWSuseast1.VPC {
+    rectangle "Subred de aplicación\n<size:16>[Deployment Node: Subnet]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWS.AWSuseast1.VPC.Subreddeaplicación {
+      rectangle "EC2 / Docker Compose\n<size:16>[Deployment Node: Linux amd64 / t3a.medium]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose {
+        rectangle "==cloudflared\n<size:16>[Infrastructure Node: Contenedor; túnel nombrado]</size>\n\nConexión saliente al borde." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.cloudflared
+        rectangle "==Nginx\n<size:16>[Infrastructure Node: Contenedor; puerto interno 8080]</size>\n\nLímites, cabeceras y rutas al BFF." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Nginx
+        rectangle "==Web\n<size:16>[Container: SvelteKit / TypeScript / Tailwind; BFF Node.js]</size>\n\nConsulta abierta, resultado, seguimiento e historial privado." <<Element-RWxlbWVudCxDb250YWluZXI=>> as AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1
+        rectangle "==API\n<size:16>[Container: Elixir / Phoenix; release OTP]</size>\n\nAcceso, análisis, conversación, cuotas e historial." <<Element-RWxlbWVudCxDb250YWluZXI=>> as AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1
+        rectangle "==SSM Agent\n<size:16>[Infrastructure Node: Amazon SSM]</size>\n\nDespliegue acotado, sin SSH público." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.SSMAgent
       }
 
     }
 
-    rectangle "Subredes privadas de datos / 2 AZ\n<size:16>[Deployment Node: Private subnets]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWSpropuesta.AWSuseast1.VPC.Subredesprivadasdedatos2AZ {
-      rectangle "RDS PostgreSQL\n<size:16>[Deployment Node: db.t4g.micro / Single-AZ / gp3]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWSpropuesta.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL {
-        database "==Datos persistentes\n<size:16>[Container: PostgreSQL en Amazon RDS]</size>\n\nHistorial, catálogos y evidencia; sesiones BFF en esquema y rol propios." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as AWSpropuesta.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL.Datospersistentes_1
-        database "==Estado temporal y cuotas\n<size:16>[Container: Mismo RDS PostgreSQL; TTL y cuotas atómicas]</size>\n\nCasos con vencimiento, contexto y contadores compartidos entre réplicas." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as AWSpropuesta.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL.Estadotemporalycuotas_1
+    rectangle "Subredes privadas de datos / 2 AZ\n<size:16>[Deployment Node: Private subnets]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWS.AWSuseast1.VPC.Subredesprivadasdedatos2AZ {
+      rectangle "RDS PostgreSQL\n<size:16>[Deployment Node: db.t4g.micro / Single-AZ / gp3]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWS.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL {
+        database "==Datos persistentes\n<size:16>[Container: PostgreSQL en Amazon RDS]</size>\n\nHistorial, catálogos y evidencia; sesiones BFF en esquema y rol propios." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as AWS.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL.Datospersistentes_1
+        database "==Estado temporal y cuotas\n<size:16>[Container: Mismo RDS PostgreSQL; TTL y cuotas atómicas]</size>\n\nCasos con vencimiento, contexto y contadores compartidos entre réplicas." <<Element-RWxlbWVudCxDb250YWluZXIsRGF0YWJhc2U=>> as AWS.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL.Estadotemporalycuotas_1
       }
 
     }
 
   }
 
-  rectangle "Cognito User Pool\n<size:16>[Deployment Node: Amazon Cognito]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWSpropuesta.AWSuseast1.CognitoUserPool {
-    rectangle "==Servicio de identidad\n<size:16>[Software System]</size>\n\nRegistro, confirmación, recuperación y acceso con Amazon Cognito." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as AWSpropuesta.AWSuseast1.CognitoUserPool.Serviciodeidentidad_1
+  rectangle "Cognito User Pool\n<size:16>[Deployment Node: Amazon Cognito]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWS.AWSuseast1.CognitoUserPool {
+    rectangle "==Servicio de identidad\n<size:16>[Software System]</size>\n\nRegistro, confirmación, recuperación y acceso con Amazon Cognito." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as AWS.AWSuseast1.CognitoUserPool.Serviciodeidentidad_1
   }
 
-  rectangle "==Parameter Store\n<size:16>[Infrastructure Node: SSM SecureString]</size>\n\nSecretos cifrados y acceso mediante Instance Profile." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWSpropuesta.AWSuseast1.ParameterStore
-  rectangle "==CloudWatch\n<size:16>[Infrastructure Node: Amazon CloudWatch]</size>\n\nLogs saneados, métricas y alarmas." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWSpropuesta.AWSuseast1.CloudWatch
-  rectangle "==S3 privado\n<size:16>[Infrastructure Node: Amazon S3]</size>\n\nArtefactos versionados y snapshots de fuentes permitidas." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWSpropuesta.AWSuseast1.S3privado
-  rectangle "==IAM / OIDC\n<size:16>[Infrastructure Node: AWS IAM]</size>\n\nConfianza restringida a repo y rama o environment." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWSpropuesta.AWSuseast1.IAMOIDC
+  rectangle "==Parameter Store\n<size:16>[Infrastructure Node: SSM SecureString]</size>\n\nSecretos cifrados y acceso mediante Instance Profile." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWS.AWSuseast1.ParameterStore
+  rectangle "==CloudWatch\n<size:16>[Infrastructure Node: Amazon CloudWatch]</size>\n\nGrupo de logs creado; alarmas y operación ampliada pendientes." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWS.AWSuseast1.CloudWatch
+  rectangle "==S3 privado\n<size:16>[Infrastructure Node: Amazon S3]</size>\n\nArtefactos versionados y snapshots de fuentes permitidas." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWS.AWSuseast1.S3privado
+  rectangle "==IAM / OIDC\n<size:16>[Infrastructure Node: AWS IAM]</size>\n\nConfianza restringida a repo y rama o environment." <<Element-RWxlbWVudCxJbmZyYXN0cnVjdHVyZSBOb2Rl>> as AWS.AWSuseast1.IAMOIDC
 }
 
-rectangle "API externa de IA\n<size:16>[Deployment Node: HTTPS]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWSpropuesta.APIexternadeIA {
-  rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nAPI directa: Muse Spark 1.3 Contributor o deepseek-flash; elección y condiciones pendientes." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as AWSpropuesta.APIexternadeIA.ProveedordeIA_1
+rectangle "API externa de IA\n<size:16>[Deployment Node: HTTPS]</size>" <<DeploymentNode-RWxlbWVudCxEZXBsb3ltZW50IE5vZGU=>> as AWS.APIexternadeIA {
+  rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nMuse Spark 1.3 Contributor con mensaje completo y evidencia; piloto interno, publicación pendiente." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as AWS.APIexternadeIA.ProveedordeIA_1
 }
 
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1 --> AWSpropuesta.AWSuseast1.ParameterStore <<Relationship-UmVsYXRpb25zaGlw>> : "Obtiene secretos de sesión\n<size:16>[HTTPS / rol EC2]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWSpropuesta.AWSuseast1.ParameterStore <<Relationship-UmVsYXRpb25zaGlw>> : "Obtiene secretos de aplicación\n<size:16>[HTTPS / rol EC2]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWSpropuesta.AWSuseast1.S3privado <<Relationship-UmVsYXRpb25zaGlw>> : "Publica snapshots permitidos\n<size:16>[HTTPS / rol EC2]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWSpropuesta.AWSuseast1.CloudWatch <<Relationship-UmVsYXRpb25zaGlw>> : "Emite métricas y logs saneados\n<size:16>[Sin texto ni tokens]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1 --> AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Gestiona consultas\n<size:16>[HTTP / JSON; red Docker interna]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1 --> AWSpropuesta.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL.Datospersistentes_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Sesiones BFF cifradas\n<size:16>[PostgreSQL / TLS; rol propio]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWSpropuesta.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL.Datospersistentes_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Lee y guarda datos\n<size:16>[Conexión protegida]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWSpropuesta.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL.Estadotemporalycuotas_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Casos y cuotas\n<size:16>[Conexión protegida]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1 --> AWSpropuesta.AWSuseast1.CognitoUserPool.Serviciodeidentidad_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Gestiona acceso\n<size:16>[OIDC / Code + PKCE]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWSpropuesta.AWSuseast1.CognitoUserPool.Serviciodeidentidad_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Obtiene claves públicas\n<size:16>[HTTPS / OIDC]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWSpropuesta.APIexternadeIA.ProveedordeIA_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Interpreta contexto minimizado\n<size:16>[HTTPS]</size>"
-AWSpropuesta.GitHub.GitHubActions --> AWSpropuesta.GitHub.GHCR <<Relationship-UmVsYXRpb25zaGlw>> : "Publica imágenes por SHA/digest\n<size:16>[HTTPS]</size>"
-AWSpropuesta.GitHub.GitHubActions --> AWSpropuesta.AWSuseast1.IAMOIDC <<Relationship-UmVsYXRpb25zaGlw>> : "Solicita credenciales temporales\n<size:16>[OIDC / STS]</size>"
-AWSpropuesta.AWSuseast1.IAMOIDC --> AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.SSMAgent <<Relationship-UmVsYXRpb25zaGlw>> : "Autoriza deploy acotado\n<size:16>[SSM]</size>"
-AWSpropuesta.GitHub.GitHubActions --> AWSpropuesta.AWSuseast1.S3privado <<Relationship-UmVsYXRpb25zaGlw>> : "Entrega manifiesto versionado\n<size:16>[HTTPS / credenciales temporales]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.SSMAgent --> AWSpropuesta.AWSuseast1.S3privado <<Relationship-UmVsYXRpb25zaGlw>> : "Obtiene artefacto autorizado\n<size:16>[HTTPS / Instance Profile]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.SSMAgent --> AWSpropuesta.GitHub.GHCR <<Relationship-UmVsYXRpb25zaGlw>> : "Descarga digests aprobados\n<size:16>[HTTPS]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.cloudflared --> AWSpropuesta.Cloudflare.DNSHTTPSyWAF <<Relationship-UmVsYXRpb25zaGlw>> : "Establece túnel saliente\n<size:16>[QUIC o HTTP/2 cifrado]</size>"
-AWSpropuesta.Cloudflare.DNSHTTPSyWAF --> AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.cloudflared <<Relationship-UmVsYXRpb25zaGlw>> : "Entrega peticiones públicas\n<size:16>[Conexión establecida]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.cloudflared --> AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Nginx <<Relationship-UmVsYXRpb25zaGlw>> : "Encamina hostname publicado\n<size:16>[HTTP; red Docker de entrada]</size>"
-AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Nginx --> AWSpropuesta.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Entrega todas las rutas públicas\n<size:16>[HTTP; red Docker]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.cloudflared --> AWS.Cloudflare.DNSHTTPSyWAF <<Relationship-UmVsYXRpb25zaGlw>> : "Establece túnel saliente\n<size:16>[QUIC o HTTP/2 cifrado]</size>"
+AWS.Cloudflare.DNSHTTPSyWAF --> AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.cloudflared <<Relationship-UmVsYXRpb25zaGlw>> : "Entrega peticiones públicas\n<size:16>[Conexión establecida]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.cloudflared --> AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Nginx <<Relationship-UmVsYXRpb25zaGlw>> : "Encamina hostname publicado\n<size:16>[HTTP; red Docker de entrada]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Nginx --> AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Entrega todas las rutas públicas\n<size:16>[HTTP; red Docker]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1 --> AWS.AWSuseast1.ParameterStore <<Relationship-UmVsYXRpb25zaGlw>> : "Obtiene secretos de sesión\n<size:16>[HTTPS / rol EC2]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWS.AWSuseast1.ParameterStore <<Relationship-UmVsYXRpb25zaGlw>> : "Obtiene secretos de aplicación\n<size:16>[HTTPS / rol EC2]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWS.AWSuseast1.S3privado <<Relationship-UmVsYXRpb25zaGlw>> : "Publica snapshots permitidos\n<size:16>[HTTPS / rol EC2]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWS.AWSuseast1.CloudWatch <<Relationship-UmVsYXRpb25zaGlw>> : "Emite métricas y logs saneados\n<size:16>[Sin texto ni tokens]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1 --> AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Gestiona consultas\n<size:16>[HTTP / JSON; red Docker interna]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1 --> AWS.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL.Datospersistentes_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Sesiones BFF cifradas\n<size:16>[PostgreSQL / TLS; rol propio]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWS.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL.Datospersistentes_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Lee y guarda datos\n<size:16>[Conexión protegida]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWS.AWSuseast1.VPC.Subredesprivadasdedatos2AZ.RDSPostgreSQL.Estadotemporalycuotas_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Casos y cuotas\n<size:16>[Conexión protegida]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.Web_1 --> AWS.AWSuseast1.CognitoUserPool.Serviciodeidentidad_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Gestiona acceso\n<size:16>[OIDC / Code + PKCE]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWS.AWSuseast1.CognitoUserPool.Serviciodeidentidad_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Obtiene claves públicas\n<size:16>[HTTPS / OIDC]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.API_1 --> AWS.APIexternadeIA.ProveedordeIA_1 <<Relationship-UmVsYXRpb25zaGlw>> : "Interpreta mensaje y comprobaciones\n<size:16>[HTTPS]</size>"
+AWS.GitHub.GitHubActions --> AWS.GitHub.GHCR <<Relationship-UmVsYXRpb25zaGlw>> : "Publica imágenes por SHA/digest\n<size:16>[HTTPS]</size>"
+AWS.GitHub.GitHubActions --> AWS.AWSuseast1.IAMOIDC <<Relationship-UmVsYXRpb25zaGlw>> : "Solicita credenciales temporales\n<size:16>[OIDC / STS]</size>"
+AWS.AWSuseast1.IAMOIDC --> AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.SSMAgent <<Relationship-UmVsYXRpb25zaGlw>> : "Autoriza deploy acotado\n<size:16>[SSM]</size>"
+AWS.GitHub.GitHubActions --> AWS.AWSuseast1.S3privado <<Relationship-UmVsYXRpb25zaGlw>> : "Entrega manifiesto versionado\n<size:16>[HTTPS / credenciales temporales]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.SSMAgent --> AWS.AWSuseast1.S3privado <<Relationship-UmVsYXRpb25zaGlw>> : "Obtiene artefacto autorizado\n<size:16>[HTTPS / Instance Profile]</size>"
+AWS.AWSuseast1.VPC.Subreddeaplicación.EC2DockerCompose.SSMAgent --> AWS.GitHub.GHCR <<Relationship-UmVsYXRpb25zaGlw>> : "Descarga digests aprobados\n<size:16>[HTTPS]</size>"
 
 @enduml

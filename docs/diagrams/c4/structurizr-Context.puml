@@ -50,14 +50,16 @@ hide stereotype
 person "==Persona que consulta\n<size:16>[Person]</size>\n\nEvalúa un mensaje y decide su siguiente acción, con o sin cuenta." <<Element-RWxlbWVudCxQZXJzb24=>> as Personaqueconsulta
 person "==Operador\n<size:16>[Person]</size>\n\nMantiene fuentes, costos y funcionamiento sin leer mensajes en logs." <<Element-RWxlbWVudCxQZXJzb24=>> as Operador
 rectangle "==Servicio de identidad\n<size:16>[Software System]</size>\n\nRegistro, confirmación, recuperación y acceso con Amazon Cognito." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Serviciodeidentidad
-rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nAPI directa: Muse Spark 1.3 Contributor o deepseek-flash; elección y condiciones pendientes." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as ProveedordeIA
-rectangle "==Fuentes verificables\n<size:16>[Software System]</size>\n\nPáginas oficiales de marcas, avisos SBS, feeds de phishing y RDAP, con procedencia." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Fuentesverificables
+rectangle "==Proveedor de IA\n<size:16>[Software System]</size>\n\nMuse Spark 1.3 Contributor con mensaje completo y evidencia; piloto interno, publicación pendiente." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as ProveedordeIA
+rectangle "==Sitios consultados\n<size:16>[Software System]</size>\n\nRaíz pública mediante HEAD, DNS/IP fijados, redirecciones limitadas; sin HTML ni JavaScript." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Sitiosconsultados
+rectangle "==Fuentes verificables\n<size:16>[Software System]</size>\n\nDominios oficiales, Phishing.Database y RDAP; otras fuentes por integrar." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Fuentesverificables
 rectangle "==Verificador de mensajes\n<size:16>[Software System]</size>\n\nSeñales, explicación y ayuda ante mensajes sospechosos para personas en Perú." <<Element-RWxlbWVudCxTb2Z0d2FyZSBTeXN0ZW0=>> as Verificadordemensajes
 
 Personaqueconsulta --> Verificadordemensajes <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta y guarda casos\n<size:16>[HTTPS]</size>"
 Operador --> Verificadordemensajes <<Relationship-UmVsYXRpb25zaGlw>> : "Mantiene fuentes y operación\n<size:16>[Acceso operativo]</size>"
 Verificadordemensajes --> Serviciodeidentidad <<Relationship-UmVsYXRpb25zaGlw>> : "Gestiona acceso\n<size:16>[OIDC / Code + PKCE]</size>"
-Verificadordemensajes --> ProveedordeIA <<Relationship-UmVsYXRpb25zaGlw>> : "Interpreta contexto minimizado\n<size:16>[HTTPS]</size>"
+Verificadordemensajes --> ProveedordeIA <<Relationship-UmVsYXRpb25zaGlw>> : "Interpreta mensaje y comprobaciones\n<size:16>[HTTPS]</size>"
 Verificadordemensajes --> Fuentesverificables <<Relationship-UmVsYXRpb25zaGlw>> : "Consulta evidencia\n<size:16>[HTTPS]</size>"
+Verificadordemensajes --> Sitiosconsultados <<Relationship-UmVsYXRpb25zaGlw>> : "Comprueba raíces públicas; corte local\n<size:16>[HEAD / DNS e IP validados]</size>"
 
 @enduml

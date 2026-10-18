@@ -27,7 +27,7 @@ La [propuesta física AWS](aws-deployment.md) y la [vista C4 de despliegue](../d
 1. La API valida entrada, sesión temporal y cuotas con actualización atómica.
 2. Extrae señales locales usando el original sólo durante el procesamiento de entrada. No lo incorpora a logs. Minimiza datos antes de conservar contexto o preparar una petición al modelo.
 3. Entrega advertencias disponibles, acciones y comprobaciones pendientes sin esperar a fuentes lentas ni a la IA. Sin evidencia suficiente, el resultado provisional es indeterminado; nunca una garantía de seguridad.
-4. Completa consultas externas permitidas, con plazo máximo y sin visitar el destino final arbitrario de un enlace. Recalcula reglas y llama al modelo sólo con contexto minimizado y dentro del presupuesto.
+4. Completa consultas externas con plazo máximo. El corte local comprueba la raíz pública del sitio con HEAD, DNS/IP fijados y redirecciones limitadas, sin visitar la ruta concreta ni ejecutar contenido. Recalcula reglas; Contributor recibe el mensaje completo y el resultado de comprobaciones dentro del presupuesto del piloto interno autorizado por JP. Ver los límites en [implementación](implementation.md#comprobación-de-sitios-y-contributor-corte-local).
 5. Valida estructura, datos permitidos y piso de riesgo. Actualiza evaluación, evidencias, cobertura y estado del caso. Un fallo marca la comprobación como no disponible y permite finalizar con cobertura parcial.
 
 La combinación distingue procedencia: el modelo puede elevar por interpretación hasta sospechoso, aun sin una señal de reglas. Alto riesgo exige sustento adicional y ninguna interpretación rebaja el piso determinista. Esa diferencia se conserva en la respuesta y el historial.

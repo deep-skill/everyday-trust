@@ -9,7 +9,7 @@ export interface CaseResult {
   summary: string;
   signals: { id: string; severity: string; message: string; checked_at: string; source: string }[];
   advice: string[];
-  domains: { domain: string | null; official_brand: string | null; age_status: string; redirect_status: string; feed_status?: string; feed_checked_at?: string; feed_published_at?: string }[];
+  domains: { domain: string | null; official_brand: string | null; age_status: string; redirect_status: string; destination_status?: string; checked_hosts?: string[]; feed_status?: string; feed_checked_at?: string; feed_published_at?: string }[];
   coverage: Record<string, string>;
   analysis_mode: string;
   analyzed_at: string;

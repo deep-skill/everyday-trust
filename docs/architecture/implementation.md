@@ -1,6 +1,6 @@
 # Implementación del primer corte
 
-Estado: implementación local y despliegue AWS privado, 17-oct-2026. La API es Phoenix 1.8.15 sobre Elixir 1.18.4/OTP 27; la web usa SvelteKit y adapter-node. PostgreSQL local sirve para desarrollo y pruebas; producción conserva RDS como decisión. No se acredita un despliegue AWS por disponer de Dockerfiles.
+Estado: implementación y despliegue AWS público, 17-oct-2026. Web: [verifica.deepskill.space](https://verifica.deepskill.space), servida mediante Cloudflare Tunnel sin puertos entrantes en EC2. La API es Phoenix 1.8.15 sobre Elixir 1.18.4/OTP 27; la web usa SvelteKit y adapter-node. PostgreSQL local sirve para desarrollo y pruebas; producción usa RDS privado.
 
 ## Recorrido implementado
 
@@ -18,7 +18,7 @@ En desarrollo, la consulta anónima no necesita Cognito configurado. La imagen d
 
 Los intentos de acceso vencen a los diez minutos y la sesión de cuenta tiene siete días de duración máxima. La clave de cifrado es externa a PostgreSQL; su rotación en este corte invalida las sesiones, sin un anillo de claves. Los roles de ejecución de API y BFF se separan de las credenciales de migración en producción. Las pruebas locales usan credenciales exclusivamente de desarrollo.
 
-Valores iniciales de implementación, configurables mediante una revisión posterior de política: cinco consultas anónimas y 25 con cuenta por día UTC; cinco seguimientos por caso, con topes diarios de 10 y 50 respectivamente; 200 análisis por red y 1.000 globales por día; 200 llamadas de IA globales por día. Son límites de operaciones, no un sistema de facturación. El proveedor conserva sus propios límites y presupuesto. El input del modelo se rechaza si mensaje estructurado e instrucciones superan 3.000 bytes UTF-8; máximo de salida de 600 tokens.
+Valores iniciales de implementación, configurables mediante una revisión posterior de política: cinco consultas anónimas y 25 con cuenta por día UTC; cinco seguimientos por caso, con topes diarios de 10 y 50 respectivamente; 200 análisis por red y 1.000 globales por día; 200 llamadas de IA globales por día. Son límites de operaciones, no un sistema de facturación. El proveedor conserva sus propios límites y presupuesto. El input de Contributor se rechaza si contexto estructurado e instrucciones superan65.536 bytes UTF-8; el adaptador alternativo conserva3.000 bytes; máximo de salida de 600 tokens.
 
 Los casos temporales vencen tras una hora, prorrogable por seguimiento hasta cuatro horas desde su creación. El vencimiento se comprueba al leer; una limpieza cada minuto elimina filas vencidas. No se persiste el mensaje original, números, emails ni rutas/query de enlaces. El contexto almacenado sólo contiene la evaluación permitida. Los resúmenes se guardan por elección y tienen lectura/borrado por propietario, con paginación de 20 elementos.
 
@@ -34,7 +34,7 @@ El snapshot inspeccionado corresponde al commit público `12a20bf8dd2b7e78d9d38f
 
 ## Integraciones y comprobación
 
-Los adaptadores directos de DeepSeek Flash y Muse Spark Contributor están escritos, con validación de salida y fallback por señales. Su activación sigue pendiente de proveedor, credencial y condiciones de datos. No se realizaron llamadas con mensajes reales. La orientación sin IA usa intenciones y acciones cerradas y lo indica en el resultado.
+Los adaptadores directos de DeepSeek Flash y Muse Spark Contributor están escritos, con validación de salida y fallback por señales. JP entregó una llave Meta y pidió Contributor; se comprobó con ejemplos ficticios. JP confirmó Contributor para el evento. JP pidió posteriormente contexto completo para las pruebas internas: mensaje original y resultado íntegro de comprobaciones; preguntas completas con el resultado disponible. Se retiró la reducción a códigos. Las acciones tras clic/datos/pago siguen locales; otras preguntas usan clasificación de intención. La credencial está cifrada y la IA pública sigue desactivada hasta desplegar este corte. No se realizaron llamadas con mensajes reales. La orientación sin IA usa intenciones y acciones cerradas y lo indica en el resultado.
 
 Las regresiones originales del motor de referencia y las pruebas Phoenix se ejecutan sin red externa. La suite de navegador usa la web compilada, PostgreSQL y JWT RSA de un proveedor simulado que fuerza renovación y rotación. No equivale a una prueba de Cognito real ni envía emails/SMS. Sus helpers sólo se cargan expresamente y se excluyen de las imágenes de producción.
 
@@ -42,19 +42,19 @@ CI y publicación manual de imágenes GHCR tienen actions fijadas a commits. La 
 
 ## Correcciones de la tercera revisión
 
-La API retorna las señales tras sus comprobaciones acotadas. Cuando se habilita un proveedor aprobado, la interpretación se ejecuta en una tarea supervisada con máximo 20 tareas simultáneas. El texto minimizado existe sólo en memoria. La consulta queda `in_progress`, revisión 1, y el cliente consulta el resultado hasta `completed`, revisión 2. Tras ocho segundos, una lectura o la limpieza periódica finaliza un trabajo perdido con IA no disponible. No hay reintentos de llamadas facturables ni resultados verdes si la interpretación queda incompleta. Un reinicio puede perder la interpretación, conservando la evaluación por señales.
+La API retorna las señales tras sus comprobaciones acotadas. Cuando se habilita un proveedor aprobado, la interpretación se ejecuta en una tarea supervisada con máximo 20 tareas simultáneas. La tarea Contributor captura el texto original sólo en memoria para enviarlo junto a las comprobaciones; el adaptador alternativo mantiene minimización. No se persiste el mensaje ni se registran payloads. La consulta queda `in_progress`, revisión 1, y el cliente consulta el resultado hasta `completed`, revisión 2. Tras ocho segundos, una lectura o la limpieza periódica finaliza un trabajo perdido con IA no disponible. No hay reintentos de llamadas facturables ni resultados verdes si la interpretación queda incompleta. Un reinicio puede perder la interpretación, conservando la evaluación por señales.
 
 Las reservas de cuotas de sesión, red y servicio se hacen en una transacción corta y se revierten juntas. Los turnos se reservan atómicamente y la llamada externa ocurre fuera de la transacción. El proxy obtiene la IP desde el único salto Nginx confiable: `ADDRESS_HEADER=x-forwarded-for`, `XFF_DEPTH=1`. Nginx reemplaza ese encabezado desde Cloudflare, y EC2 carece de entradas públicas.
 
-RDAP utiliza el bootstrap IANA versionado en `api/priv/catalog/rdap-bootstrap.json` y consulta directamente el registro HTTPS correspondiente. No visita la URL de la persona ni sigue redirecciones generales. La falta de soporte o respuesta se presenta como cobertura parcial.
+RDAP utiliza el bootstrap IANA versionado en `api/priv/catalog/rdap-bootstrap.json` y consulta directamente el registro HTTPS correspondiente. RDAP no visita la URL de la persona ni sigue redirecciones generales. Por separado, el nuevo comprobador HEAD del corte local sí consulta raíces públicas con restricciones descritas abajo. La falta de soporte o respuesta se presenta como cobertura parcial.
 
 `daily_metrics` conserva conteos agregados por día UTC y distingue consultas y demostraciones. Registra finalizaciones, consultas adicionales en una sesión o cuenta, opiniones y errores de solicitudes recibidas por el controlador de creación. No mide personas únicas ni todos los errores de la infraestructura. Las opiniones agregadas sobreviven a la limpieza del caso temporal. Los ejemplos de la interfaz se reconocen en servidor y quedan separados de la tracción. `GET /api/v1/stats` expone sólo estos agregados.
 
-El contenedor web exige configuración de identidad, origen HTTPS, cifrado y CA de RDS antes de arrancar. Phoenix exige la misma identidad y bloquea Meta Contributor en producción hasta resolver sus condiciones de datos. Un fallo transitorio de renovación conserva la sesión y devuelve indisponibilidad, sin convertirla silenciosamente en anónima.
+El contenedor web exige configuración de identidad, origen HTTPS, cifrado y CA de RDS antes de arrancar. Phoenix exige la misma identidad y, para Meta, `AI_INPUT_MODE=full_context` para el piloto interno de hackathon. Un fallo transitorio de renovación conserva la sesión y devuelve indisponibilidad, sin convertirla silenciosamente en anónima.
 
-AWS está aprovisionado y el despliegue privado pasó por GitHub Actions con OIDC y SSM. Cognito usa Essentials, rotación de refresh tokens y managed login v2. El primer stack vacío falló por incompatibilidad entre Lite y rotación, se verificó que no tenía usuarios y se eliminó antes de recrearlo. La entrada por Tunnel requiere un token Cloudflare con permisos de escritura, pendiente. Este estado no acredita todavía un despliegue público ni el recorrido OIDC completo en navegador contra AWS. Doce comprobaciones privadas con dos identidades Cognito reales y RDS verificaron JWT, aislamiento, guardado, feedback, borrado de consultas y eliminación de ambos usuarios en Cognito, sin emails/SMS.
+AWS está aprovisionado y el despliegue pasó por GitHub Actions con OIDC y SSM. Cognito usa Essentials, rotación de refresh tokens y managed login v2. El primer stack vacío falló por incompatibilidad entre Lite y rotación, se verificó que no tenía usuarios y se eliminó antes de recrearlo. Cloudflare Tunnel ya proporciona la entrada pública. El recorrido OIDC completo en navegador contra AWS sigue pendiente. Doce comprobaciones privadas con dos identidades Cognito reales y RDS verificaron JWT, aislamiento, guardado, feedback, borrado de consultas y eliminación de ambos usuarios en Cognito, sin emails/SMS.
 
-Verificación local de este corte: 67 pruebas Phoenix, 45 pruebas Node, 29 comprobaciones de navegador y chequeo Svelte sin errores ni advertencias.
+Verificación de la versión publicada: 67 pruebas Phoenix, 45 pruebas Node y 29 comprobaciones de navegador. El refinamiento local posterior añade comprobaciones descritas al final.
 
 ## Verificación AWS privada
 
@@ -64,4 +64,38 @@ El catálogo de 391.548 hosts quedó cargado en RDS con el SHA y fechas descrito
 
 La cadena privada Nginx → BFF → API → RDS responde 200/201, aplica CSP y permite crear un intento OIDC con PKCE. Managed login acepta `prompt=login` y `max_age=0`, sin acreditar todavía reautenticación interactiva. Las pruebas sintéticas no se suman a consultas reales en las métricas.
 
-Pendientes de integración: permiso Cloudflare para crear Tunnel y DNS; recorrido OIDC completo en navegador público; elección, credencial y condiciones de datos del proveedor de IA. La IA sigue deshabilitada. Restauración de backups pendiente de ejercicio. No se anuncia una URL pública lista.
+## Verificación pública
+
+El 17-oct se creó un Tunnel administrado y su DNS proxied exclusivo para el hostname del proyecto. El conector usa una credencial propia cifrada en SSM; el token administrativo permanece fuera de EC2. La CLI oficial `cf` y las credenciales se documentan en `devops-agents`.
+
+HTTPS respondió 200 con CSP, HSTS y `Cache-Control: no-store`; HTTP redirige a HTTPS con 308 sólo en el hostname del proyecto. La consulta sintética devolvió 201 y veredicto inconcluso; una escritura desde otro origen fue rechazada con 403. Chrome mostró la consulta de ejemplo bancaria como alto riesgo y cargó el managed login de Cognito. En una ventana privada, el ejemplo familiar devolvió sospechoso y recomendó llamar al número previamente guardado. `/auth/login` devolvió 303 con PKCE S256, state y cookie Secure. Los ejemplos se contabilizan como demostraciones, sin incrementar consultas reales.
+
+Pendientes de integración: recorrido OIDC completo en navegador público y publicación del piloto Contributor de contexto completo. La IA pública sigue deshabilitada. Restauración de backups pendiente de ejercicio.
+
+## Refinamiento local tras pruebas de uso
+
+La portada explica el problema antes del formulario. Guía, ejemplos ficticios y preguntas frecuentes se movieron a `/como-funciona`, accesible desde la navegación. La columna izquierda queda limitada al alto de la ventana. El resultado usa motivos numerados con títulos y explicaciones de16px, direcciones y límites separados, evidencia y ayuda desplegables, guardado explícito y feedback breve. Se retiraron el contador inicial de turnos y las métricas diarias visibles; sus límites y conteos siguen en servidor. Sin carga de imágenes todavía. Ver [decisiones de experiencia](../design/experience.md#ajustes-tras-la-prueba-desplegada-de-jp-17-oct).
+
+Tipos y build correctos, 45 pruebas Node y 102 Phoenix aprobadas. Revisión manual en Chrome de portada, consulta, ayuda por datos compartidos y pago, explicación del guardado y presentación a 390px. Los selectores E2E se ajustaron al nuevo contenido; la suite completa de navegador no se volvió a ejecutar en esta revisión. Cambios locales pendientes de commit/push y despliegue.
+
+
+## Comprobación de sitios y Contributor, corte local
+
+`Destination` resuelve DNS A, exige que todas las respuestas sean IPv4 públicas y fija la conexión a una IP validada. Mint conserva hostname, SNI y verificación del certificado. HEAD consulta sólo `/`, sin userinfo, ruta, query, fragmento, cookies o credenciales. Sólo puertos80/443, máximo tres sitios por recorrido, encabezados16KiB, plazos por conexión/respuesta y límite exterior de4s por enlace. Cada redirección se valida de nuevo; se bloquean redes privadas, loopback, metadata AWS, IPv6 y destinos locales. No se sigue una bajada HTTPS a HTTP. Una redirección dentro del mismo host no provoca una visita a su ruta.
+
+Los acortadores de la lista permitida conservan su resolución previa mediante HEAD del enlace completo. Tanto esos hosts intermedios como los observados al comprobar raíces se comparan con el feed por host exacto. Los nuevos hosts reciben comprobaciones locales de imitación; las redirecciones a otro dominio son una señal adicional débil. El resultado guardado conserva sólo dominios registrables, nunca subdominios identificadores, rutas o parámetros. No se descarga HTML, no se ejecuta JavaScript y no se conoce la cadena de la ruta concreta de un sitio arbitrario. Una respuesta HTTP sólo acredita que hubo respuesta en esa comprobación. Con red habilitada, una comprobación de sitio incompleta impide un resultado verde; la cobertura distingue ese estado.
+
+Por instrucción expresa de JP, el piloto interno envía `message` original y `analysis` completo, incluidas señales, dominios, cobertura, resultado de reglas y consejos. Las preguntas de seguimiento se envían completas con el resultado disponible, sin recuperar el original porque no se conserva. Las categorías de interacción siguen usando acciones locales. El modelo puede interpretar lenguaje sin señales deterministas; esa elevación queda limitada a sospechoso y no rebaja reglas. Las pruebas verifican igualdad del payload con el texto y el análisis, conservación de5.000 caracteres Unicode y ausencia del original en PostgreSQL. Antes de abrir al público general se cambiará el modelo/modalidad.
+
+Prueba de integración local: consulta ficticia con `https://www.viabcp.com/`, BFF201, sitio `completed`, IA `completed` y `signals_and_ai`. Revisión visual en Chrome de motivos independientes, sidebar y guía separada. Al recargar la API con el corte final, otra consulta conservó señales con IA no disponible y sitio completado. El adaptador anterior de códigos cerrados volvió a responder HTTP200 en4.402ms con códigos ficticios; no se garantiza disponibilidad ni se añaden reintentos automáticos. El modelo C4 y sus exportaciones PlantUML/SVG se actualizaron para incluir los sitios consultados y la entrada completa de Contributor para el piloto interno; Structurizr valida. Sólo datos sintéticos. La versión pública conserva las imágenes anteriores y la IA desactivada hasta commit, publicación y despliegue.
+
+Referencias de implementación: [OWASP SSRF](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html), [Mint HTTP](https://mint.hexdocs.pm/Mint.HTTP.html) y [contrato Contributor](ai-interpretation.md).
+
+
+## Piloto interno de contexto completo
+
+JP indicó que las pruebas de los próximos días son internas de hackathon y autorizó enviar todo el mensaje y su contexto a Muse Spark Contributor. Esta decisión sustituye la restricción anterior a códigos. La salida continúa siendo categorías e ids validados; no se muestra prosa generada ni se atribuye una vulnerabilidad comprobada al modelo. El mensaje sólo vive en memoria durante el análisis, fuera de resultados persistidos y logs.
+
+Los ejemplos dejaron el home y se integraron en las tarjetas de `/como-funciona`. Sus enlaces preparan una consulta mediante ids cerrados `bank`/`family`, sin ejecutar análisis automáticamente. La suite E2E quedó adaptada al nuevo recorrido y compiló, pero no se volvió a ejecutar completa. Validación de este corte:102 Phoenix,45 Node y tipos/build correctos.
+
+Prueba del contexto completo desde Chrome: /como-funciona → ejemplo bancario → formulario preparado → Revisar mensaje → caso completado con signals_and_ai y coverage.ai=completed. Veredicto alto riesgo conservado; destino .example no disponible y cobertura parcial, como corresponde a un fixture. Home sin ejemplos y tarjetas de guía revisadas visualmente.

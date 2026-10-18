@@ -39,6 +39,7 @@ defmodule EverydayTrust.Analysis do
         {_, local} ->
           Map.merge(local, %{
             "age_status" => "unavailable",
+            "destination_status" => "unavailable",
             "redirect_status" => "unavailable"
           })
       end)
@@ -66,6 +67,7 @@ defmodule EverydayTrust.Analysis do
 
     score = min(100, Enum.reduce(signals, 0, fn s, n -> n + @weights[s["severity"]] end))
     official = findings != [] && Enum.all?(findings, &is_binary(&1["official_brand"]))
+    destinations_complete = Enum.all?(findings, &(&1["destination_status"] == "completed"))
 
     verdict =
       cond do
@@ -75,7 +77,8 @@ defmodule EverydayTrust.Analysis do
         score >= 15 ->
           "suspicious"
 
-        score == 0 && official && (!options[:feed] || feed_status == "completed") ->
+        score == 0 && official && (!network || destinations_complete) &&
+            (!options[:feed] || feed_status == "completed") ->
           "no_signals_detected"
 
         true ->
@@ -106,19 +109,37 @@ defmodule EverydayTrust.Analysis do
       "domains" =>
         Enum.map(
           findings,
-          &Map.take(&1, [
-            "domain",
-            "official_brand",
-            "age_status",
-            "redirect_status",
-            "feed_status",
-            "feed_version",
-            "feed_checked_at",
-            "feed_published_at"
-          ])
+          fn finding ->
+            finding
+            |> Map.take([
+              "domain",
+              "checked_hosts",
+              "destination_status",
+              "official_brand",
+              "age_status",
+              "redirect_status",
+              "feed_status",
+              "feed_version",
+              "feed_checked_at",
+              "feed_published_at"
+            ])
+            |> Map.update("checked_hosts", [], fn hosts ->
+              hosts
+              |> Enum.map(&EverydayTrust.Domain.registrable_domain/1)
+              |> Enum.reject(&is_nil/1)
+              |> Enum.uniq()
+            end)
+          end
         ),
       "coverage" => %{
         "official_domains" => "completed",
+        "destination" =>
+          cond do
+            findings == [] -> "not_applicable"
+            !network -> "not_checked"
+            destinations_complete -> "completed"
+            true -> "partial"
+          end,
         "registration" =>
           if(Enum.any?(findings, &(&1["age_status"] == "unavailable")),
             do: "partial",
