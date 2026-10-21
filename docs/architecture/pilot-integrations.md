@@ -11,6 +11,7 @@ Las fuentes externas amplían la revisión por reglas. Su ausencia, un error o u
 | `REPORT_ACTIONS_ENABLED` | `false` | Canales de reporte iniciados por el usuario |
 | `IMAGE_INPUT_ENABLED` | `false` | Lectura de una captura con Meta |
 | `COMMUNITY_REPORTS_ENABLED` | `false` | Consentimiento y agregados de la comunidad |
+| `ATOMICMEMORY_ENABLED` | `false` | Notas personales en resultados guardados ([E1](#e1-notas-personales-con-atomic-memory)) |
 
 Las llaves `GOOGLE_SAFE_BROWSING_API_KEY` y `URLSCAN_API_KEY` se inyectan en ejecución. No se incluyen en Git, imágenes ni parámetros de build. La operación, el almacenamiento cifrado en SSM, los digests y el rollback se documentan en el repositorio privado `devops-agents`. El estado comprobado de la versión publicada corresponde a [implementation.md](implementation.md), no a la existencia de un módulo en el código.
 
@@ -81,3 +82,16 @@ Las cuotas diarias son tres aportes por sesión, sesenta por red y quinientos gl
 ## D2. Exportación del operador
 
 `mix community.export --output /ruta/privada/candidatos.csv` genera un archivo exclusivo con permisos 0600, sin sobrescribir otro archivo. También puede invocarse `EverydayTrust.Community.Export.csv/0` desde el release con el rol autorizado. Incluye candidatos comunitarios con tres sesiones vigentes y actividad durante la última semana: dominio, marca, veredicto, fechas y conteo agregado. Omite seudónimos y mensajes y protege las celdas contra fórmulas de hojas de cálculo. No hay endpoint público ni envío automático a bancos o al Estado.
+
+## E1. Notas personales con Atomic Memory
+
+Con cuenta, cada resultado guardado admite una nota breve (280 caracteres) escrita por su titular, por ejemplo qué hizo después. El BFF la guarda en Atomic Memory y la ofrece como recordatorio cuando una consulta nueva termina con un resultado parecido. Es contexto personal, no evidencia: no modifica veredicto, señales, puntuación, cobertura ni pasos de emergencia, y se muestra fuera de la tarjeta del resultado con esa advertencia.
+
+- **Configuración.** `ATOMICMEMORY_ENABLED=true`, `ATOMICMEMORY_API_URL` (HTTPS; HTTP sólo en loopback para el fixture local), `ATOMICMEMORY_API_KEY` y `ATOMICMEMORY_SUBJECT_KEY` (32 caracteres o más). Sin la configuración completa las rutas `/api/memory/*` responden 404 y la interfaz no muestra notas. La llave sólo vive en el servidor.
+- **Identidad.** `user_id` es `et_` + HMAC-SHA256 del `sub` verificado de Cognito con `ATOMICMEMORY_SUBJECT_KEY`. No se usan `session_id`, `workspace_id` ni `agent_id`: según la documentación de Atomic Memory, el hilo reemplaza al sujeto en Cloud y no aísla usuarios. El navegador nunca elige el sujeto. Rotar la llave deja inaccesibles las notas anteriores.
+- **Datos enviados.** El resumen fijo del veredicto (cadenas definidas en Phoenix), los códigos estáticos de señales y la nota, tras ocultar números, correos y enlaces. Nunca el mensaje original, la captura, los enlaces revisados ni los textos de las señales. La búsqueda usa sólo el resumen fijo y los códigos.
+- **Contrato HTTP.** `POST /v1/memories/ingest/quick` con `skip_extraction: true`, `content_class: "redacted"` y `metadata.externalId = saved-case:<id>`; reenviar el mismo id corrige la nota en sitio. `POST /v1/memories/search/fast` (límite 5, umbral 0,3, se muestran 2). `GET /v1/memories/list` paginado por `limit`/`offset` hasta 50 páginas de 100. `DELETE /v1/memories/:id?user_id=` cuenta como borrado sólo con `{ "success": true }`.
+- **Fallos.** Cada llamada tiene un plazo de 2,5 s (500 ms a 5 s), cuerpo máximo de 1 MiB y validación del JSON. Sin ids devueltos no se informa «guardado». Un recuerdo fallido no muestra notas y nunca retrasa ni altera el resultado.
+- **Borrado.** Borrar un resultado guardado o la cuenta elimina primero sus notas; si alguna queda, la operación se detiene e informa cuántas se borraron. El borrado de cuenta sólo limpia notas cuando Phoenix aceptará la eliminación (acceso en los últimos cinco minutos).
+
+Las pruebas (`tests/atomic-memory.test.mjs`) usan `tests/fixtures/atomic-memory-fixture.mjs`, un servidor HTTP local falso con la forma documentada de esas rutas. No es Atomic Memory ni sirve como evidencia del servicio real; las capturas o demos que lo usen deben indicarlo.

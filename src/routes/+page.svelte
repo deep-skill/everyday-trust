@@ -1,21 +1,25 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { PageProps } from './$types';
-  import { verdictLabels, type CaseResult, type HistoryItem } from '$lib/cases';
+  import { verdictLabels, type CaseNote as SavedNote, type CaseResult, type HistoryItem } from '$lib/cases';
   import ResultEvidence from '$lib/components/ResultEvidence.svelte';
   import Traction, { type Totals } from '$lib/components/Traction.svelte';
   import ReviewForm from '$lib/components/ReviewForm.svelte';
   import ReportActions, { type ReportAction } from '$lib/components/ReportActions.svelte';
   import ImageInput from '$lib/components/ImageInput.svelte';
   import CommunityConsent from '$lib/components/CommunityConsent.svelte';
+  import CaseNote from '$lib/components/CaseNote.svelte';
+  import RelatedNotes from '$lib/components/RelatedNotes.svelte';
   import { findExample } from '$lib/examples';
   let { data }: PageProps = $props();
   let text = $state(''), submitted = $state(''), loading = $state(false), error = $state('');
   let result = $state<CaseResult | null>(null), activeCase = $state<string | null>(null);
   let history = $state<HistoryItem[]>([]), historyOpen = $state(false), cursor = $state<string | null>(null);
-  let saved = $state(false), followup = $state(''), followupText = $state(''), followupBusy = $state(false);
+  let saved = $state(false), savedId = $state<string | null>(null), followup = $state(''), followupText = $state(''), followupBusy = $state(false);
   let turns = $state(5), interactions = $state<string[]>([]);
   let totals = $state<Totals | null>(null);
+  let notes = $state<Record<string, SavedNote>>({}), notesError = $state('');
+  const caseNotes = $derived(data.authenticated && data.features.case_notes);
   let confirmDelete = $state(false), deleting = $state(false);
   let loggingOut = $state(false);
   let image = $state<string | null>(null), imageBusy = $state(false), imageInputKey = $state(0);
@@ -47,7 +51,7 @@
   function reset() {
     generation++;
 
-    text = ''; submitted = ''; result = null; activeCase = null; saved = false; error = '';
+    text = ''; submitted = ''; result = null; activeCase = null; saved = false; savedId = null; error = '';
     image = null; imageBusy = false; imageInputKey++;
     followup = ''; followupText = ''; turns = 5; interactions = []; historyOpen = false;
     window.history.replaceState({}, '', '/');
@@ -57,7 +61,7 @@
     event?.preventDefault();
     if (loading || imageBusy || (!text.trim() && !image)) return;
     generation++;
-    error = ''; loading = true; saved = false; followup = ''; followupText = ''; interactions = []; turns = 5;
+    error = ''; loading = true; saved = false; savedId = null; followup = ''; followupText = ''; interactions = []; turns = 5;
     try {
       const value = image && data.features.image_input
         ? await api('image-cases', 'POST', { image, text })
@@ -73,7 +77,7 @@
   async function save() {
     if (!data.authenticated) { dialog.showModal(); return; }
     if (!activeCase || saved || result?.analysis_status === 'in_progress') return;
-    try { await api(`cases/${activeCase}/save`, 'POST', {}); saved = true; }
+    try { savedId = (await api(`cases/${activeCase}/save`, 'POST', {})).id; saved = true; }
     catch (e) { error = (e as Error).message; }
   }
   async function openHistory(more = false) {
@@ -83,12 +87,26 @@
       const value = await api(`history${more && cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`);
       history = more ? [...history, ...value.items] : value.items; cursor = value.next_cursor;
       historyOpen = true;
+      if (caseNotes && !more) void loadNotes();
     } catch (e) { error = (e as Error).message; }
     finally { loading = false; }
   }
+  async function loadNotes() {
+    notesError = '';
+    try {
+      const response = await fetch('/api/memory/notes');
+      const value = await response.json().catch(() => null);
+      if (!response.ok || !Array.isArray(value?.notes)) throw new Error(value?.error?.message ?? 'No pudimos cargar tus notas ahora.');
+      notes = Object.fromEntries((value.notes as SavedNote[]).map(note => [note.saved_case_id, note]));
+    } catch (e) { notesError = (e as Error).message; }
+  }
+  function setNote(savedCaseId: string, note: SavedNote | null) {
+    const { [savedCaseId]: _, ...rest } = notes;
+    notes = note ? { ...rest, [savedCaseId]: note } : rest;
+  }
   async function remove(id: string) {
-    try { await api(`history/${id}`, 'DELETE'); history = history.filter(item => item.id !== id); }
-    catch (e) { error = (e as Error).message; }
+    try { await api(`history/${id}`, 'DELETE'); history = history.filter(item => item.id !== id); setNote(id, null); }
+    catch (e) { error = (e as Error).message; if (caseNotes) void loadNotes(); }
   }
   function viewSaved(item: HistoryItem) {
     generation++;
@@ -169,8 +187,10 @@
       {#if historyOpen}
         <section aria-labelledby="history-title"><div class="case-heading"><h1 id="history-title">Mis consultas</h1><button class="quiet-button" onclick={reset}>＋ Nueva consulta</button></div>
           <p class="result-summary">Sólo aparecen los resultados que elegiste guardar. Puedes borrarlos cuando quieras.</p>
+          {#if caseNotes}<p class="small-note">Tus notas se guardan con Atomic Memory sólo para tu cuenta. Nunca cambian el resultado de una revisión.</p>{/if}
+          {#if notesError}<p class="error-message" role="alert">{notesError}</p>{/if}
           {#if !history.length}<div class="empty-history">Aún no guardaste resultados. Revisa un mensaje y elige «Guardar resultado».</div>{/if}
-          <ul class="history-list">{#each history as item (item.id)}<li><button class="history-open" onclick={() => viewSaved(item)}><span class="mini-label">{verdictLabels[item.result.verdict]}</span><p>{item.result.summary}</p><time>{new Date(item.created_at).toLocaleDateString('es-PE')}</time></button><button class="delete-button" aria-label="Borrar consulta guardada" onclick={() => remove(item.id)}>Borrar</button></li>{/each}</ul>
+          <ul class="history-list">{#each history as item (item.id)}<li><div class="history-main"><button class="history-open" onclick={() => viewSaved(item)}><span class="mini-label">{verdictLabels[item.result.verdict]}</span><p>{item.result.summary}</p><time>{new Date(item.created_at).toLocaleDateString('es-PE')}</time></button>{#if caseNotes && !notesError}<CaseNote savedCaseId={item.id} note={notes[item.id] ?? null} onchange={note => setNote(item.id, note)} />{/if}</div><button class="delete-button" aria-label="Borrar consulta guardada" onclick={() => remove(item.id)}>Borrar</button></li>{/each}</ul>
           {#if cursor}<button class="secondary-button" disabled={loading} onclick={() => openHistory(true)}>Ver más consultas</button>{/if}
         </section>
       {:else if !result}
@@ -202,6 +222,7 @@
             <ResultEvidence {result} />
             {#if data.features.report_actions}<ReportActions actions={result.report_actions as ReportAction[] | undefined} />{/if}
           </article>
+          {#if caseNotes && activeCase && result.analysis_status === 'completed'}{#key activeCase}<RelatedNotes caseId={activeCase} />{/key}{/if}
           {#if activeCase}
             <details class="help-panel">
               <summary>¿Necesitas más ayuda con este mensaje?</summary>
@@ -218,6 +239,7 @@
               </section>
             </details>
             <div class="save-case"><div><p>Vuelve a ver este resultado en tu historial.<span>Sólo se guarda el resumen, sin el mensaje original.</span></p></div><button class="secondary-button" disabled={saved || result.analysis_status === 'in_progress'} onclick={save}>{saved ? 'Resultado guardado' : 'Guardar resultado'}</button></div>
+            {#if caseNotes && savedId}{#key savedId}<CaseNote savedCaseId={savedId} note={notes[savedId] ?? null} onchange={note => setNote(savedId!, note)} />{/key}{/if}
             {#if data.features.community_reports && result.analysis_status === 'completed' && result.community_domain}{#key activeCase}<CommunityConsent caseId={activeCase} domain={result.community_domain} />{/key}{/if}
             {#if result.analysis_status === 'completed'}{#key activeCase}<ReviewForm caseId={activeCase} onrecord={() => void refreshTotals()} />{/key}{/if}
           {:else}<p class="privacy-note">Resultado histórico. Las comprobaciones corresponden a la fecha indicada.</p>{/if}

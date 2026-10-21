@@ -19,6 +19,8 @@ export interface CaseResult {
   expires_at?: string;
 }
 export interface HistoryItem { id: string; result: CaseResult; created_at: string }
+/** A personal note on a saved case, kept in Atomic Memory. Reference context only, never evidence. */
+export interface CaseNote { id: string; saved_case_id: string; case_id: string; analyzed_at: string; verdict: CaseVerdict; summary: string; note: string; updated_at: string }
 export const verdictLabels: Record<CaseVerdict, string> = {
   high_risk: 'Alto riesgo', suspicious: 'Sospechoso', no_signals_detected: 'Sin señales detectadas', inconclusive: 'Indeterminado'
 };

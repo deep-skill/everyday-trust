@@ -102,7 +102,14 @@ defmodule EverydayTrustWeb.CaseController do
   def saved(conn, %{"id" => id}) do
     with_owner(conn, fn owner ->
       with {:ok, item} <- Cases.saved(id, owner),
-           do: {:ok, %{id: item.id, result: item.result, created_at: item.inserted_at}}
+           do:
+             {:ok,
+              %{
+                id: item.id,
+                case_id: item.temporary_case_id,
+                result: item.result,
+                created_at: item.inserted_at
+              }}
     end)
   end
 

@@ -1,8 +1,10 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { authCookie, cookieOptions, currentSession, visitor } from '$lib/server/auth';
+import { authCookie, cookieOptions, currentSession } from '$lib/server/auth';
 import { database } from '$lib/server/database';
-import { createHmac } from 'node:crypto';
+import { apiHeaders } from '$lib/server/api';
+import { caseMemory } from '$lib/server/memory';
+import { PurgeIncomplete } from '$lib/server/atomic-memory';
 
 const allowed: Record<string, RegExp> = {
   GET: /^(health|stats|radar|me|history|history\/[a-f0-9-]{36}|cases\/[a-f0-9-]{36})$/,
@@ -16,9 +18,24 @@ const proxy: RequestHandler = async ({ cookies, params, request, url, getClientA
   if (!env.API_BASE_URL || !env.API_SERVICE_TOKEN) return json({ error: { code: 'api_unavailable', message: 'El servicio está iniciando. Inténtalo en unos momentos.' } }, { status: 503 });
   try {
     const session = await currentSession(cookies);
-    const headers = new Headers({ 'content-type': 'application/json', 'x-service-token': env.API_SERVICE_TOKEN, 'x-session-id': visitor(cookies) });
-    headers.set('x-network-id', createHmac('sha256', env.API_SERVICE_TOKEN).update(path === 'health' ? 'health-check' : getClientAddress()).digest('hex'));
-    if (session) headers.set('authorization', `Bearer ${session.access}`);
+    const headers = apiHeaders(cookies, session?.access ?? null, path === 'health' ? 'health-check' : getClientAddress());
+    // Deleting a saved case or the account also removes the matching notes from Atomic
+    // Memory first; if any note remains, the case or account is not deleted and the user can retry.
+    // Account deletion only cleans up when Phoenix will accept it (login within five minutes).
+    const memory = caseMemory();
+    const recentLogin = session && Date.now() / 1000 - session.authTime <= 300;
+    const cleanup = request.method !== 'DELETE' ? null : path === 'me' ? (recentLogin ? 'all' : null) : path.startsWith('history/') ? path.slice(8) : null;
+    if (session && memory && cleanup) {
+      const subject = memory.subject(session.subject);
+      try { await memory.client.purge(subject, note => cleanup === 'all' || note.saved_case_id === cleanup); }
+      catch (error) {
+        const what = cleanup === 'all' ? 'Tu cuenta y tus resultados siguen activos' : 'El resultado guardado sigue en tu historial';
+        const message = error instanceof PurgeIncomplete && error.removed > 0
+          ? `Borramos ${error.removed} de tus notas, pero ${error.remaining} siguen guardadas. ${what}; inténtalo de nuevo.`
+          : `No pudimos borrar tus notas guardadas. ${what}; inténtalo de nuevo.`;
+        return json({ error: { code: 'memory_cleanup_failed', message } }, { status: 503 });
+      }
+    }
     let body: string | undefined;
     if (request.method === 'POST') {
       const reader = request.body?.getReader();
