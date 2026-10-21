@@ -37,6 +37,8 @@ defmodule EverydayTrust.CasesTest do
     assert Repo.aggregate(SavedCase, :count) == 1
     assert {:error, 404, _} = Cases.save(result["id"], @session, second)
     assert {:error, 404, _} = Cases.saved(saved["id"], second)
+    assert {:ok, %SavedCase{temporary_case_id: case_id}} = Cases.saved(saved["id"], first)
+    assert case_id == result["id"]
     assert {:error, 404, _} = Cases.delete(saved["id"], second)
     assert {:ok, _} = Cases.delete(saved["id"], first)
     assert Cases.history(first, nil).items == []
